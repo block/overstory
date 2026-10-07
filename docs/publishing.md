@@ -3,7 +3,6 @@
 The Maven coordinates are `xyz.block.overstory:core` and `xyz.block.overstory:view-compat`.
 Before creating release tags, verify that publishing credentials have access to `xyz.block`
 and that the release environment protections are configured.
-No public release is available yet.
 Kotlin package names remain `com.squareup.ui.compose.overlays` and its subpackages.
 
 ## Local validation

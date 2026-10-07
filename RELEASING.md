@@ -22,8 +22,9 @@ publishing job; it does not restrict organization secrets to that job.
 
 1. Merge the intended changes and check that the selected commit's build and device tests pass.
    Verify the repository is ready for a public artifact release.
-2. Choose an unused version; the first planned release is `0.1.0`. Maven Central releases are
-   immutable, including prereleases. `-SNAPSHOT` tags are rejected.
+2. Choose an unused version. The commands below use the first release, `0.1.0`, as an example;
+   choose a new version for subsequent releases. Maven Central releases are immutable, including
+   prereleases. `-SNAPSHOT` tags are rejected.
 3. Fetch and inspect the exact commit, then push only the new tag:
 
    ```sh
