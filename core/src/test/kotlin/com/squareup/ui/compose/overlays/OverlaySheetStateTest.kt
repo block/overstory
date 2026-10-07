@@ -93,6 +93,97 @@ class OverlaySheetStateTest {
   }
 
   @Test
+  fun outwardPostFlingLeavesAnchoredSheetAndVelocityAlone() = runBlocking {
+    for (initialValue in OverlaySheetValue.entries) {
+      val clock = BroadcastFrameClock()
+      val state = OverlaySheetState(initialValue, initialHeight = 100f)
+      val initialOffset = state.offset
+      var calls = 0
+      val policy = OverlaySheetSettlingPolicy { _, _, _, _ ->
+        calls++
+        if (initialValue == OverlaySheetValue.Shown) OverlaySheetValue.Hidden
+        else OverlaySheetValue.Shown
+      }
+      val connection = state.nestedScrollConnection(policy, snap())
+      val available = Velocity(42f, if (initialValue == OverlaySheetValue.Shown) -80f else 80f)
+      var consumed = Velocity.Zero
+      val fling =
+        launch(clock, start = CoroutineStart.UNDISPATCHED) {
+          consumed = connection.onPostFling(Velocity.Zero, available)
+        }
+      clock.sendFrame(0L)
+      fling.join()
+      assertThat(calls).isEqualTo(0)
+      assertThat(state.offset).isEqualTo(initialOffset)
+      assertThat(state.settledValue).isEqualTo(initialValue)
+      assertThat(consumed).isEqualTo(Velocity.Zero)
+    }
+  }
+
+  @Test
+  fun outwardPostFlingCompletesDragToOppositeAnchor() = runBlocking {
+    for (initialValue in OverlaySheetValue.entries) {
+      val clock = BroadcastFrameClock()
+      val state = OverlaySheetState(initialValue, initialHeight = 100f)
+      val destination =
+        if (initialValue == OverlaySheetValue.Shown) OverlaySheetValue.Hidden
+        else OverlaySheetValue.Shown
+      var calls = 0
+      val policy = OverlaySheetSettlingPolicy { _, _, _, _ ->
+        calls++
+        destination
+      }
+      val connection = state.nestedScrollConnection(policy, snap())
+      val direction = if (destination == OverlaySheetValue.Hidden) 1f else -1f
+      connection.onPostScroll(
+        Offset.Zero,
+        Offset(0f, direction * 100f),
+        NestedScrollSource.UserInput,
+      )
+      assertThat(state.offset).isEqualTo(if (destination == OverlaySheetValue.Hidden) 0f else -100f)
+      assertThat(state.settledValue).isEqualTo(initialValue)
+      var consumed = Velocity.Zero
+      val fling =
+        launch(clock, start = CoroutineStart.UNDISPATCHED) {
+          consumed = connection.onPostFling(Velocity.Zero, Velocity(42f, direction * 80f))
+        }
+      clock.sendFrame(0L)
+      fling.join()
+      assertThat(calls).isEqualTo(1)
+      assertThat(state.settledValue).isEqualTo(destination)
+      assertThat(consumed).isEqualTo(Velocity.Zero)
+    }
+  }
+
+  @Test
+  fun inwardPostFlingCanSettleFromEitherAnchor() = runBlocking {
+    for (initialValue in OverlaySheetValue.entries) {
+      val clock = BroadcastFrameClock()
+      val state = OverlaySheetState(initialValue, initialHeight = 100f)
+      val destination =
+        if (initialValue == OverlaySheetValue.Shown) OverlaySheetValue.Hidden
+        else OverlaySheetValue.Shown
+      var calls = 0
+      val policy = OverlaySheetSettlingPolicy { _, _, _, _ ->
+        calls++
+        destination
+      }
+      val connection = state.nestedScrollConnection(policy, snap())
+      val available = Velocity(42f, if (initialValue == OverlaySheetValue.Shown) 80f else -80f)
+      var consumed = Velocity.Zero
+      val fling =
+        launch(clock, start = CoroutineStart.UNDISPATCHED) {
+          consumed = connection.onPostFling(Velocity.Zero, available)
+        }
+      clock.sendFrame(0L)
+      fling.join()
+      assertThat(calls).isEqualTo(1)
+      assertThat(state.settledValue).isEqualTo(destination)
+      assertThat(consumed).isEqualTo(Velocity(0f, available.y))
+    }
+  }
+
+  @Test
   fun zeroVerticalPostFlingLeavesSettledAnchorsAlone() = runBlocking {
     for (initialValue in OverlaySheetValue.entries) {
       val clock = BroadcastFrameClock()
