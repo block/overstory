@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 — Unreleased
+## 0.2.0 — 2026-10-07
 
 ### Compatibility
 
@@ -16,6 +16,8 @@
 
 ### Changes
 
+- Leave outward fling velocity available to parent scrollers and overscroll effects at sheet
+  boundaries, while still completing settling when a drag reaches the opposite anchor.
 - Upgrade Compose in both library modules and the independent artifact consumer.
 - Adapt API documentation generation and Kotlin configuration to Android Gradle Plugin 9.
 
