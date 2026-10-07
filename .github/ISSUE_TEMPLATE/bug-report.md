@@ -1,31 +1,25 @@
 ---
-name: 🐛 Bug Report
-about: Thank you for taking the time, please report a reproducible bug
-title: "[Bug] <Bug Title Here>"
+name: Bug report
+about: Report a reproducible issue with Overstory
+title: "[Bug] "
 labels: bug
-assignees: add codeowner's @name here 
-
+assignees: steve-the-edwards
 ---
 
-**Describe the bug**
-*A clear and concise description of what the bug is.*
+## Description
 
-**To Reproduce:**
-*Steps to reproduce the behavior:*
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Describe the issue and the expected behavior.
 
-**Expected behavior:**
-*A clear and concise description of what you expected to happen.*
+## Reproduction
 
-**Supporting Material**
-*If applicable, add screenshots, output log and/or other documentation to help explain your problem.*
+Provide a minimal reproduction and steps to trigger the issue.
 
-**Environment (please complete the following information):**
- - OS: [ex: iOS]
- - Version 
+## Environment
 
-**Additional context**
-Add any other context that you feel is relevant about the problem here.
+- Overstory version or commit:
+- Android version and device:
+- Kotlin and Compose versions:
+
+## Supporting information
+
+Include relevant logs or screenshots with sensitive information removed.

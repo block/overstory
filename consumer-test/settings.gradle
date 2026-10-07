@@ -1,0 +1,23 @@
+pluginManagement {
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    google()
+    mavenCentral()
+    exclusiveContent {
+      forRepository {
+        maven {
+          url = providers.gradleProperty('overstoryRepository').getOrElse('../build/repository')
+        }
+      }
+      filter { includeGroup('com.squareup.overstory') }
+    }
+  }
+}
+rootProject.name = 'overstory-consumer-test'

@@ -1,0 +1,97 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+  id 'com.android.library' version '8.13.2' apply false
+  id 'org.jetbrains.kotlin.android' version '2.3.21' apply false
+  id 'org.jetbrains.kotlin.plugin.compose' version '2.3.21' apply false
+  id 'com.ncorti.ktfmt.gradle' version '0.25.0' apply false
+  id 'com.vanniktech.maven.publish.base' version '0.36.0' apply false
+  id 'org.jetbrains.dokka' version '2.2.0' apply false
+}
+
+subprojects {
+  group = 'com.squareup.overstory'
+  version = rootProject.version
+  apply plugin: 'com.android.library'
+  apply plugin: 'org.jetbrains.kotlin.android'
+  apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+  apply plugin: 'com.ncorti.ktfmt.gradle'
+  apply plugin: 'com.vanniktech.maven.publish.base'
+  apply plugin: 'org.jetbrains.dokka'
+
+  android {
+    compileSdk = 35
+    defaultConfig {
+      minSdk = 24
+      testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    compileOptions {
+      sourceCompatibility = JavaVersion.VERSION_11
+      targetCompatibility = JavaVersion.VERSION_11
+    }
+    buildFeatures { compose = true }
+    testOptions { unitTests.all { failOnNoDiscoveredTests = false } }
+  }
+  tasks.withType(KotlinCompile).configureEach {
+    kotlinOptions {
+      jvmTarget = '11'
+      if (!name.endsWith('TestKotlin')) freeCompilerArgs += '-Xexplicit-api=strict'
+      freeCompilerArgs += '-Xconsistent-data-class-copy-visibility'
+    }
+  }
+  kotlin {
+    abiValidation {
+      enabled = true
+      filters { excluded { byNames.add('**.BuildConfig') } }
+    }
+  }
+  ktfmt { googleStyle() }
+  // Include the full license in published archives, using the root copy as the source.
+  tasks.withType(Zip).matching {
+    it.name == 'bundleReleaseAar' || it.name.endsWith('Jar')
+  }.configureEach {
+    from(rootProject.file('LICENSE')) { into 'META-INF' }
+  }
+  publishing.repositories.maven {
+    name = 'Staging'
+    url = rootProject.layout.buildDirectory.dir('repository')
+  }
+  mavenPublishing {
+    configure(new AndroidSingleVariantLibrary(
+      new JavadocJar.Dokka('dokkaGeneratePublicationHtml'), new SourcesJar.Sources(), 'release'))
+    coordinates(project.group.toString(), project.name, project.version.toString())
+    publishToMavenCentral()
+    // Ordinary checks and local staging do not need signing credentials.
+    if (providers.gradleProperty('signPublications').getOrElse('false').toBoolean()) {
+      signAllPublications()
+    }
+    pom {
+      name = "Overstory ${project.name}"
+      description = 'Composable overlay hosting, placement, and sheet mechanics for Android.'
+      inceptionYear = '2024'
+      url = 'https://github.com/block/overstory'
+      licenses {
+        license {
+          name = 'The Apache License, Version 2.0'
+          url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+          distribution = 'repo'
+        }
+      }
+      scm {
+        url = 'https://github.com/block/overstory'
+        connection = 'scm:git:https://github.com/block/overstory.git'
+        developerConnection = 'scm:git:ssh://git@github.com/block/overstory.git'
+      }
+      developers {
+        developer {
+          id = 'block'
+          name = 'Block, Inc.'
+          url = 'https://github.com/block'
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,114 @@
+public final class com/squareup/ui/compose/overlays/CenterSeekingOverlayPlacement : com/squareup/ui/compose/overlays/OverlayPlacementStrategy {
+	public static final field $stable I
+	public fun <init> ()V
+	public fun <init> (F)V
+	public synthetic fun <init> (FILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun calculatePosition-anThbd4 (Landroidx/compose/ui/geometry/Rect;Landroidx/compose/ui/geometry/Rect;JLandroidx/compose/ui/unit/LayoutDirection;)J
+}
+
+public final class com/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt {
+	public static final field INSTANCE Lcom/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt;
+	public fun <init> ()V
+	public final fun getLambda$-81405369$core_release ()Lkotlin/jvm/functions/Function3;
+}
+
+public final class com/squareup/ui/compose/overlays/DirectionalOverlayPlacement : com/squareup/ui/compose/overlays/OverlayPlacementStrategy {
+	public static final field $stable I
+	public fun <init> ()V
+	public fun <init> (Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;)V
+	public synthetic fun <init> (Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun calculatePosition-anThbd4 (Landroidx/compose/ui/geometry/Rect;Landroidx/compose/ui/geometry/Rect;JLandroidx/compose/ui/unit/LayoutDirection;)J
+}
+
+public abstract interface annotation class com/squareup/ui/compose/overlays/ExperimentalComposeOverlaysApi : java/lang/annotation/Annotation {
+}
+
+public final class com/squareup/ui/compose/overlays/ImeTranslationKt {
+	public static final fun imeTranslation (Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;I)Landroidx/compose/ui/Modifier;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayAnchorKt {
+	public static final fun overlayAnchor (Landroidx/compose/ui/Modifier;Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;Z)Landroidx/compose/ui/Modifier;
+	public static synthetic fun overlayAnchor$default (Landroidx/compose/ui/Modifier;Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;ZILjava/lang/Object;)Landroidx/compose/ui/Modifier;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayAnchorModifierNode : androidx/compose/ui/Modifier$Node, androidx/compose/ui/node/GlobalPositionAwareModifierNode {
+	public static final field $stable I
+	public fun <init> (Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;Z)V
+	public synthetic fun <init> (Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getShouldAutoInvalidate ()Z
+	public fun onAttach ()V
+	public fun onDetach ()V
+	public fun onGloballyPositioned (Landroidx/compose/ui/layout/LayoutCoordinates;)V
+	public fun onReset ()V
+	public final fun update (Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;Z)V
+	public static synthetic fun update$default (Lcom/squareup/ui/compose/overlays/OverlayAnchorModifierNode;Lcom/squareup/ui/compose/overlays/OverlayAnchorRegistry;ZILjava/lang/Object;)V
+}
+
+public abstract interface class com/squareup/ui/compose/overlays/OverlayAnchorRegistry {
+	public abstract fun registerAnchor (Ljava/lang/String;Landroidx/compose/ui/geometry/Rect;)V
+	public abstract fun unregisterAnchor (Ljava/lang/String;)V
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayFocusKt {
+	public static final fun overlayFocusTarget (Landroidx/compose/ui/Modifier;ZZ)Landroidx/compose/ui/Modifier;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayHostKt {
+	public static final fun OverlayHost (Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function4;Landroidx/compose/runtime/Composer;II)V
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayPlacementPreference : java/lang/Enum {
+	public static final field Above Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static final field Any Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static final field Below Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static final field End Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static final field Start Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+	public static fun values ()[Lcom/squareup/ui/compose/overlays/OverlayPlacementPreference;
+}
+
+public abstract interface class com/squareup/ui/compose/overlays/OverlayPlacementStrategy {
+	public abstract fun calculatePosition-anThbd4 (Landroidx/compose/ui/geometry/Rect;Landroidx/compose/ui/geometry/Rect;JLandroidx/compose/ui/unit/LayoutDirection;)J
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayScrimKt {
+	public static final fun OverlayScrim-DIANMbU (ZJZZZLandroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function1;FLkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
+}
+
+public abstract interface class com/squareup/ui/compose/overlays/OverlaySheetSettlingPolicy {
+	public abstract fun target (FFLcom/squareup/ui/compose/overlays/OverlaySheetValue;F)Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlaySheetState {
+	public static final field $stable I
+	public static final field Companion Lcom/squareup/ui/compose/overlays/OverlaySheetState$Companion;
+	public fun <init> (Lcom/squareup/ui/compose/overlays/OverlaySheetValue;F)V
+	public synthetic fun <init> (Lcom/squareup/ui/compose/overlays/OverlaySheetValue;FILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getOffset ()F
+	public final fun getSettledValue ()Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+	public final fun getTouchDragState ()Landroidx/compose/foundation/gestures/DraggableState;
+	public final fun isAnimationRunning ()Z
+	public final fun nestedScrollConnection (Lcom/squareup/ui/compose/overlays/OverlaySheetSettlingPolicy;Landroidx/compose/animation/core/AnimationSpec;)Landroidx/compose/ui/input/nestedscroll/NestedScrollConnection;
+	public final fun settle (FLcom/squareup/ui/compose/overlays/OverlaySheetSettlingPolicy;Landroidx/compose/animation/core/AnimationSpec;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun updateHeight (FLcom/squareup/ui/compose/overlays/OverlaySheetValue;Landroidx/compose/animation/core/AnimationSpec;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun updateHeight$default (Lcom/squareup/ui/compose/overlays/OverlaySheetState;FLcom/squareup/ui/compose/overlays/OverlaySheetValue;Landroidx/compose/animation/core/AnimationSpec;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlaySheetState$Companion {
+	public final fun saver (F)Landroidx/compose/runtime/saveable/Saver;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlaySheetValue : java/lang/Enum {
+	public static final field Hidden Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+	public static final field Shown Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+	public static fun values ()[Lcom/squareup/ui/compose/overlays/OverlaySheetValue;
+}
+
+public final class com/squareup/ui/compose/overlays/OverlayStackKt {
+	public static final fun takeTopmost (Ljava/util/List;I)Ljava/util/List;
+}
+

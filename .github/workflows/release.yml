@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-central-release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    if: github.repository == 'block/overstory'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*)?$ || "$RELEASE_TAG" == *SNAPSHOT* ]]; then
+            echo 'Expected a release tag such as v0.1.0 or v0.1.0-alpha.1' >&2
+            exit 1
+          fi
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: version
+    uses: ./.github/workflows/checks.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  publish:
+    needs: [version, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: maven-central
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+        with:
+          cache-disabled: true
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Sign and release to Maven Central
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SECRET_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_SECRET_PASSPHRASE }}
+        run: >-
+          ./gradlew --no-daemon --no-configuration-cache -Pversion="$RELEASE_VERSION"
+          -PsignPublications=true publishAndReleaseToMavenCentral
