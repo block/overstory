@@ -1,0 +1,90 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: 0.1.0-SNAPSHOT
+
+permissions:
+  contents: read
+
+env:
+  OVERSTORY_VERSION: ${{ inputs.version || '0.1.0-SNAPSHOT' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Check and stage artifacts
+        run: >-
+          ./gradlew --no-daemon -Pversion="$OVERSTORY_VERSION"
+          testDebugUnitTest checkKotlinAbi ktfmtCheck lintRelease assembleDebugAndroidTest
+          publishAllPublicationsToStagingRepository
+      - run: python3 scripts/verify-artifacts.py "$OVERSTORY_VERSION"
+      - name: Build independent artifact consumer
+        run: >-
+          ./gradlew --no-daemon -p consumer-test -PoverstoryVersion="$OVERSTORY_VERSION"
+          ktfmtCheck assembleDebug assembleDebugAndroidTest
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+
+  device-tests:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Stage this revision's artifacts
+        run: ./gradlew --no-daemon -Pversion="$OVERSTORY_VERSION" publishAllPublicationsToStagingRepository
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: false
+          script: |
+            ./gradlew --no-daemon -Pversion="$OVERSTORY_VERSION" :core:connectedDebugAndroidTest :view-compat:connectedDebugAndroidTest
+            ./gradlew --no-daemon -p consumer-test -PoverstoryVersion="$OVERSTORY_VERSION" connectedDebugAndroidTest
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: device-test-reports
+          path: |
+            **/build/reports/**
+            **/build/outputs/androidTest-results/**
