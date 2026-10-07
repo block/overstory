@@ -21,7 +21,9 @@ publishing job; it does not restrict organization secrets to that job.
 ## Trigger a release
 
 1. Merge the intended changes and check that the selected commit's build and device tests pass.
-   Verify the repository is ready for a public artifact release.
+   Verify the repository is ready for a public artifact release. Update [CHANGELOG.md](CHANGELOG.md)
+   with the release contents and consumer compatibility requirements; replace the unreleased marker
+   with the release date when preparing the final release commit.
 2. Choose an unused version. The commands below use the first release, `0.1.0`, as an example;
    choose a new version for subsequent releases. Maven Central releases are immutable, including
    prereleases. `-SNAPSHOT` tags are rejected.
@@ -57,7 +59,7 @@ The workflow does not create a GitHub Release or release notes automatically.
 
 ## Verify the published artifacts
 
-Use Java 21 and Android SDK 35 as described in [README.md](README.md). After Central has made the
+Use Java 21 and Android SDK 37 as described in [README.md](README.md). After Central has made the
 artifacts available, build the independent consumer against Central, using the version just released:
 
 ```sh
