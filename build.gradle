@@ -13,7 +13,7 @@ plugins {
 }
 
 subprojects {
-  group = 'com.squareup.overstory'
+  group = 'xyz.block.overstory'
   version = rootProject.version
   apply plugin: 'com.android.library'
   apply plugin: 'org.jetbrains.kotlin.android'

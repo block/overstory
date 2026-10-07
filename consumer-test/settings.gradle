@@ -16,7 +16,7 @@ dependencyResolutionManagement {
           url = providers.gradleProperty('overstoryRepository').getOrElse('../build/repository')
         }
       }
-      filter { includeGroup('com.squareup.overstory') }
+      filter { includeGroup('xyz.block.overstory') }
     }
   }
 }

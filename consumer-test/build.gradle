@@ -24,7 +24,7 @@ android {
 }
 ktfmt { googleStyle() }
 dependencies {
-  implementation "com.squareup.overstory:view-compat:${providers.gradleProperty('overstoryVersion').get()}"
+  implementation "xyz.block.overstory:view-compat:${providers.gradleProperty('overstoryVersion').get()}"
   implementation 'androidx.activity:activity-compose:1.10.1'
   androidTestImplementation 'androidx.compose.ui:ui-test-junit4:1.9.5'
   androidTestImplementation 'androidx.test:rules:1.6.1'
