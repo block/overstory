@@ -29,14 +29,14 @@ See the [engine guide](docs/engine-guide.md) and the
 
 ## Build and test
 
-Requires Java 21 and Android SDK 35. Set `ANDROID_HOME` to your SDK installation to configure
+Requires Java 21 and Android SDK 37. Set `ANDROID_HOME` to your SDK installation to configure
 both Gradle builds. Alternatively, set `sdk.dir` in both `local.properties` at the repository root
 and `consumer-test/local.properties`; these files are untracked. The consumer is a separate Gradle
 build and does not read the root build's `local.properties`.
-Install `platform-tools`, `platforms;android-35`, and `build-tools;35.0.0` with the Android SDK Manager.
+Install `platform-tools`, `platforms;android-37.0`, and `build-tools;37.0.0` with the Android SDK Manager.
 Minimum Android version is API 24; bytecode targets Java 11.
-The supported dependency baseline is Kotlin 2.3.21, Compose 1.9.5, lifecycle 2.9.4,
-savedstate 1.3.3, Android Gradle Plugin 8.13.2, and Gradle 9.5.0.
+The supported dependency baseline is Kotlin 2.3.21, Compose 1.12.1, lifecycle 2.9.4,
+savedstate 1.3.3, Android Gradle Plugin 9.4.1, and Gradle 9.8.0.
 Dependencies resolve from Google Maven and Maven Central; Gradle plugins also use the Gradle Plugin Portal.
 No publishing credentials are needed to build or test.
 
