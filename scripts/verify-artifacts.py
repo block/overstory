@@ -9,7 +9,7 @@ from zipfile import ZipFile
 version = sys.argv[1]
 root = Path(__file__).resolve().parent.parent
 license_text = (root / 'LICENSE').read_bytes()
-group = 'com.squareup.overstory'
+group = 'xyz.block.overstory'
 for module in ('core', 'view-compat'):
     base = root / 'build/repository' / group.replace('.', '/') / module / version
     def artifact_path(extension, classifier=''):

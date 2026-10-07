@@ -1,8 +1,8 @@
 # Artifact staging and releases
 
-The proposed coordinates are `com.squareup.overstory:core` and `com.squareup.overstory:view-compat`.
-The Maven Central namespace is awaiting confirmation; do not create release tags until it is
-approved and publishing credentials and environment protections are configured.
+The Maven coordinates are `xyz.block.overstory:core` and `xyz.block.overstory:view-compat`.
+Before creating release tags, verify that publishing credentials have access to `xyz.block`
+and that the release environment protections are configured.
 No public release is available yet.
 Kotlin package names remain `com.squareup.ui.compose.overlays` and its subpackages.
 
@@ -24,7 +24,7 @@ The independent consumer resolves those Maven artifacts rather than project depe
 Keep device animation scales enabled; the sheet tests exercise animations.
 
 For Maven Local, use `./gradlew -Pversion=0.1.0-SNAPSHOT publishToMavenLocal` and configure the
-application to resolve `com.squareup.overstory` from Maven Local. Remove the override after testing.
+application to resolve `xyz.block.overstory` from Maven Local. Remove the override after testing.
 
 ## Maven Central releases
 

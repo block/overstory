@@ -8,9 +8,9 @@ The API is experimental.
 
 ## Modules
 
-- `com.squareup.overstory:core`: Compose host, focus, scrim, anchor registration, placement,
+- `xyz.block.overstory:core`: Compose host, focus, scrim, anchor registration, placement,
   and two-anchor sheet mechanics.
-- `com.squareup.overstory:view-compat`: optional Android View saved-state integration, built
+- `xyz.block.overstory:view-compat`: optional Android View saved-state integration, built
   on core. Compose-only applications need only core.
 
 The Kotlin packages are `com.squareup.ui.compose.overlays` and
