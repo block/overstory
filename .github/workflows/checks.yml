@@ -33,7 +33,7 @@ jobs:
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
       - name: Check and stage artifacts
         run: >-
           ./gradlew --no-daemon -Pversion="$OVERSTORY_VERSION"
@@ -68,7 +68,7 @@ jobs:
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

@@ -4,7 +4,7 @@ import com.vanniktech.maven.publish.SourcesJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id 'com.android.library' version '8.13.2' apply false
+  id 'com.android.library' version '9.4.1' apply false
   id 'org.jetbrains.kotlin.android' version '2.3.21' apply false
   id 'org.jetbrains.kotlin.plugin.compose' version '2.3.21' apply false
   id 'com.ncorti.ktfmt.gradle' version '0.25.0' apply false
@@ -23,7 +23,7 @@ subprojects {
   apply plugin: 'org.jetbrains.dokka'
 
   android {
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
       minSdk = 24
       testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
@@ -49,6 +49,12 @@ subprojects {
     }
   }
   ktfmt { googleStyle() }
+  dokka {
+    // Under AGP 9, Dokka's Android adapter un-suppresses the 'main' source set (displayed as
+    // 'androidJvm'), which duplicates the 'release' source set's roots and fails Dokka's
+    // pre-generation check. Keep documenting the published 'release' variant only.
+    dokkaSourceSets.named('main') { suppress = true }
+  }
   // Include the full license in published archives, using the root copy as the source.
   tasks.withType(Zip).matching {
     it.name == 'bundleReleaseAar' || it.name.endsWith('Jar')
