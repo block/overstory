@@ -232,8 +232,8 @@ public class OverlaySheetState(
    * Consumes upward user input before the child and leftover input after it. Upward flings settle a
    * displaced sheet before the child; remaining flings settle it afterward. A zero-vertical
    * post-fling settles only between anchors, leaving an anchored destination alone. Consumed nested
-   * input cancels active sheet animations. Only vertical motion is consumed. Recreate the
-   * connection when policy or animation spec changes.
+   * input cancels active sheet animations. Outward flings at either anchor remain unconsumed. Only
+   * vertical motion is consumed. Recreate the connection when policy or animation spec changes.
    */
   public fun nestedScrollConnection(
     settlingPolicy: OverlaySheetSettlingPolicy,
@@ -267,13 +267,23 @@ public class OverlaySheetState(
       override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
         val offset = draggableState.requireOffset()
         val anchors = draggableState.anchors
+        val outwardAtBoundary =
+          (available.y < 0f && offset <= anchors.minPosition()) ||
+            (available.y > 0f && offset >= anchors.maxPosition())
+        // A settled boundary cannot use outward velocity. A drag that just reached the opposite
+        // anchor must still finish settling so its logical destination catches up with its offset.
+        if (outwardAtBoundary && offset == anchors.positionOf(draggableState.settledValue)) {
+          return Velocity.Zero
+        }
         val betweenAnchors = offset > anchors.minPosition() && offset < anchors.maxPosition()
         // Pre-fling may have already settled and consumed Y. Do not ask the policy to select a
         // second destination, but still finish a displaced sheet after a zero-velocity release.
         if (available.y != 0f || betweenAnchors) {
           settle(available.y, settlingPolicy, animationSpec)
         }
-        return Velocity(0f, available.y)
+        // Leave outward velocity for a parent scroller or overscroll effect, even when we had
+        // to finish settling the preceding drag.
+        return if (outwardAtBoundary) Velocity.Zero else Velocity(0f, available.y)
       }
     }
 
