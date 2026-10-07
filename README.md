@@ -68,6 +68,7 @@ that artifacts are available.
 
 - [Contributing](CONTRIBUTING.md)
 - [Releasing](RELEASING.md)
+- [Changelog](CHANGELOG.md)
 - [Code owners](CODEOWNERS)
 - [Governance](GOVERNANCE.md)
 - [Code of conduct](https://github.com/block/.github/blob/main/CODE_OF_CONDUCT.md)
