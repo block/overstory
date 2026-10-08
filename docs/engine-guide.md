@@ -31,6 +31,15 @@ fun Dialogs(dialogs: List<DialogModel>) {
 Use the View-compatible host with the same arguments when needed. The renderer supplies scrims,
 focus and pointer policy, layout, and Back handling; the host does not choose those policies.
 
+## Focus
+
+`Modifier.overlayFocusTarget` makes an overlay a focus target and lets an entry claim initial focus,
+usually the topmost one. Wrap content that an overlay can cover, such as `coveredContent` and lower
+entries, in `Modifier.overlayFocusLayer`, and tell it whether the overlays above block that content.
+A covered layer releases focus and keeps focus out of its content. Once it is uncovered, it restores
+the descendant that had focus. If there is none to restore, its overlay focus targets request
+initial focus again.
+
 ## Identity, state, and lifecycle
 
 - Entries render in list order, from bottom to top. Keys must be stable, unique in the current
