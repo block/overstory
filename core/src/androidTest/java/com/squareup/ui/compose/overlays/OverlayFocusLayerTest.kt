@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -524,6 +525,29 @@ class OverlayFocusLayerTest {
     }
 
     rule.onNodeWithTag(overlayTag).requestFocus().assertIsFocused()
+  }
+
+  @Test
+  fun layerRemovedWhileWaitingToRestoreDoesNotRestore() {
+    val isCovered = mutableStateOf(true)
+    val isShown = mutableStateOf(true)
+    rule.setContent {
+      if (isShown.value) {
+        Box(Modifier.overlayFocusLayer { isCovered.value }) {
+          Box(Modifier.size(48.dp).testTag(editorTag).focusable())
+        }
+      }
+    }
+
+    // The uncovered layer waits for a frame to apply before it restores focus. Remove it in that
+    // frame.
+    rule.runOnIdle {
+      isCovered.value = false
+      Snapshot.sendApplyNotifications()
+      isShown.value = false
+    }
+
+    rule.onNodeWithTag(editorTag).assertDoesNotExist()
   }
 
   private companion object {

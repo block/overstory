@@ -342,7 +342,7 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
 
   private fun releaseFocusIfStillCovered() {
     pendingClear = null
-    if (!covered || !hasFocus) return
+    if (!isAttached || !covered || !hasFocus) return
     // Force releases focus that a descendant captured, which declined the covering overlay's
     // request. Overlay focus targets that want focus request it again once it is released.
     currentValueOf(LocalFocusManager).clearFocus(force = true)
@@ -363,6 +363,8 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
 
   private fun restoreFocusAfterUncover() {
     pendingRestore = null
+    // A frame that detaches this layer can still resume the wait for it to apply.
+    if (!isAttached) return
     // An enclosing layer that is still covered asks this layer to restore once it is uncovered.
     if (covered || isInCoveredLayer()) return
     if (hasFocus) {
