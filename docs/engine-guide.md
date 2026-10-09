@@ -38,7 +38,11 @@ usually the topmost one. Wrap content that an overlay can cover, such as `covere
 entries, in `Modifier.overlayFocusLayer`, and tell it whether the overlays above block that content.
 A covered layer releases focus and keeps focus out of its content. Once it is uncovered, it restores
 the descendant that had focus. If there is none to restore, its overlay focus targets request
-initial focus again.
+initial focus again. Both happen after the frame that applies the change, so covered content keeps
+focus while that frame applies and a dismissed overlay is gone before focus returns. When a covered
+layer releases focus, overlay focus targets outside covered layers that want initial focus request
+it, so the covering overlay ends up focused even if covered content had captured focus or a View
+embedded in it took focus.
 
 ## Identity, state, and lifecycle
 

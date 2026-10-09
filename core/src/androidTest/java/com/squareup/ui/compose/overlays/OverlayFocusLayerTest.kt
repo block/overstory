@@ -21,8 +21,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
@@ -246,6 +250,130 @@ class OverlayFocusLayerTest {
       assertThat(editTextHadFocusWhenCovered).isTrue()
       assertThat(editText.hasFocus()).isFalse()
     }
+  }
+
+  @Test
+  fun embeddedViewKeepsFocusWhileSnapshotCoverageIsApplied() {
+    val showOverlay = mutableStateOf(false)
+    lateinit var editText: EditText
+    var editTextHadFocusWhenCovered: Boolean? = null
+    rule.setContent {
+      Box(Modifier.overlayFocusLayer { showOverlay.value }) {
+        AndroidView(factory = { context -> EditText(context).also { editText = it } })
+      }
+      val isCoveredNow = showOverlay.value
+      if (isCoveredNow) {
+        Box(
+          Modifier.size(48.dp)
+            .testTag(overlayTag)
+            .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+        )
+      }
+      AndroidView(
+        factory = { context -> View(context) },
+        update = { if (isCoveredNow) editTextHadFocusWhenCovered = editText.hasFocus() },
+      )
+    }
+    rule.runOnIdle { assertThat(editText.requestFocus()).isTrue() }
+
+    rule.runOnIdle { showOverlay.value = true }
+
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.runOnIdle {
+      assertThat(editTextHadFocusWhenCovered).isTrue()
+      assertThat(editText.hasFocus()).isFalse()
+    }
+  }
+
+  @Test
+  fun snapshotCoverageRestoresFocusAfterCoveringOverlayIsRemoved() {
+    val showOverlay = mutableStateOf(false)
+    var isOverlayAttached = false
+    var editorFocusedWhileOverlayAttached: Boolean? = null
+    rule.setContent {
+      Box(Modifier.overlayFocusLayer { showOverlay.value }) {
+        BasicTextField(
+          rememberTextFieldState(),
+          Modifier.testTag(editorTag).onFocusChanged {
+            if (it.isFocused) editorFocusedWhileOverlayAttached = isOverlayAttached
+          },
+        )
+      }
+      if (showOverlay.value) {
+        DisposableEffect(Unit) {
+          isOverlayAttached = true
+          onDispose { isOverlayAttached = false }
+        }
+        Box(
+          Modifier.size(48.dp)
+            .testTag(overlayTag)
+            .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+        )
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { showOverlay.value = true }
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+
+    rule.runOnIdle { showOverlay.value = false }
+
+    rule.onNodeWithTag(editorTag).assertIsFocused()
+    rule.runOnIdle { assertThat(editorFocusedWhileOverlayAttached).isFalse() }
+  }
+
+  @Test
+  fun coveringOverlayTakesFocusOnceCoveredContentReleasesCapturedFocus() {
+    val showOverlay = mutableStateOf(false)
+    val editorFocusRequester = FocusRequester()
+    rule.setContent {
+      // Coverage changes while the frame applies, after the overlay requests initial focus.
+      val isCoveredNow = showOverlay.value
+      Box(Modifier.overlayFocusLayer { isCoveredNow }) {
+        BasicTextField(
+          rememberTextFieldState(),
+          Modifier.testTag(editorTag).focusRequester(editorFocusRequester),
+        )
+      }
+      if (isCoveredNow) {
+        Box(
+          Modifier.size(48.dp)
+            .testTag(overlayTag)
+            .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+        )
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { assertThat(editorFocusRequester.captureFocus()).isTrue() }
+
+    rule.runOnIdle { showOverlay.value = true }
+
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+  }
+
+  @Test
+  fun coveredEmbeddedViewCannotKeepFocusFromCoveringOverlay() {
+    val showOverlay = mutableStateOf(false)
+    lateinit var editText: EditText
+    rule.setContent {
+      Box(Modifier.overlayFocusLayer { showOverlay.value }) {
+        AndroidView(factory = { context -> EditText(context).also { editText = it } })
+      }
+      if (showOverlay.value) {
+        Box(
+          Modifier.size(48.dp)
+            .testTag(overlayTag)
+            .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+        )
+      }
+    }
+    rule.runOnIdle { showOverlay.value = true }
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+
+    rule.runOnIdle { editText.requestFocus() }
+
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.runOnIdle { assertThat(editText.hasFocus()).isFalse() }
   }
 
   private companion object {

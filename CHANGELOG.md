@@ -5,10 +5,11 @@
 ### Changes
 
 - Add experimental `Modifier.overlayFocusLayer` for content that overlays can cover. A covered
-  layer releases focus and keeps focus out of its content. When it is uncovered, it restores the
-  descendant that had focus.
-- `Modifier.overlayFocusTarget` waits to request initial focus while it is inside a covered layer,
-  and requests it again when the layer is uncovered without restoring focus.
+  layer releases focus, including captured focus and focus that a View embedded in it takes, and
+  keeps focus out of its content. When it is uncovered, it restores the descendant that had focus.
+- `Modifier.overlayFocusTarget` waits to request initial focus while it is inside a covered layer.
+  It requests it again when the layer is uncovered without restoring focus, and when a covered
+  layer in the same window releases focus.
 
 ## 0.2.0 — 2026-10-07
 
