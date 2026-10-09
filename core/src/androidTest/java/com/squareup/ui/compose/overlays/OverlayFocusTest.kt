@@ -15,6 +15,7 @@
  */
 package com.squareup.ui.compose.overlays
 
+import android.view.View
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,12 +24,14 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import org.junit.Rule
 import org.junit.Test
 
@@ -110,6 +113,62 @@ class OverlayFocusTest {
     rule.runOnIdle { enabled.value = true }
 
     rule.onNodeWithTag(overlayTag).assertIsFocused()
+  }
+
+  @Test
+  fun removedTargetDoesNotTakeFocusWhileItDetaches() {
+    val isShown = mutableStateOf(true)
+    lateinit var hostView: View
+    rule.setContent {
+      hostView = LocalView.current
+      Column {
+        if (isShown.value) {
+          Box(
+            Modifier.size(48.dp)
+              .testTag(overlayTag)
+              .overlayFocusTarget(enabled = true, requestInitialFocus = false)
+          ) {
+            AndroidView({ FocusReturningView(it, hostView) })
+          }
+        }
+        Box(Modifier.size(48.dp).testTag(externalTag).focusable())
+      }
+    }
+
+    // Leave no view focused, so that the host searches its content for a target to focus.
+    rule.runOnIdle {
+      hostView.clearFocus()
+      isShown.value = false
+    }
+
+    rule.onNodeWithTag(externalTag).requestFocus().assertIsFocused()
+  }
+
+  @Test
+  fun contentOfRemovedTargetDoesNotTakeFocusWhileItDetaches() {
+    val isShown = mutableStateOf(true)
+    lateinit var hostView: View
+    rule.setContent {
+      hostView = LocalView.current
+      Column {
+        if (isShown.value) {
+          Box(Modifier.overlayFocusTarget(enabled = true, requestInitialFocus = false)) {
+            Box(Modifier.size(48.dp).testTag(contentTag).focusable()) {
+              AndroidView({ FocusReturningView(it, hostView) })
+            }
+          }
+        }
+        Box(Modifier.size(48.dp).testTag(externalTag).focusable())
+      }
+    }
+
+    // Leave no view focused, so that the host searches its content for a target to focus.
+    rule.runOnIdle {
+      hostView.clearFocus()
+      isShown.value = false
+    }
+
+    rule.onNodeWithTag(externalTag).requestFocus().assertIsFocused()
   }
 
   private companion object {

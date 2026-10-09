@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Add experimental `Modifier.overlayFocusLayer` for content that overlays can cover. A covered
+  layer releases focus, including captured focus and focus that a View embedded in it takes, and
+  keeps focus out of its content. When it is uncovered, it restores the descendant that had focus.
+- `Modifier.overlayFocusTarget` waits to request initial focus while it is inside a covered layer.
+  It requests it again when the layer is uncovered without restoring focus, and when a covered
+  layer in its composition, or in a composition embedded in it, releases focus.
+- Overlay focus targets and layers that are being removed keep focus away from themselves and their
+  content. A focus search that runs while they detach, such as when Android hands back the focus
+  of a removed view, could otherwise leave focus on a detached node.
+
 ## 0.2.0 — 2026-10-07
 
 ### Compatibility
