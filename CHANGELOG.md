@@ -10,6 +10,9 @@
 - `Modifier.overlayFocusTarget` waits to request initial focus while it is inside a covered layer.
   It requests it again when the layer is uncovered without restoring focus, and when a covered
   layer in its composition, or in a composition embedded in it, releases focus.
+- Overlay focus targets and layers that are being removed keep focus away from themselves and their
+  content. A focus search that runs while they detach, such as when Android hands back the focus
+  of a removed view, could otherwise leave focus on a detached node.
 
 ## 0.2.0 — 2026-10-07
 

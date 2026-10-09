@@ -137,8 +137,13 @@ private sealed interface OverlayFocusParticipant : TraversableNode, FocusRequest
 private object OverlayFocusTraverseKey
 
 private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
-  DelegatingNode(), SemanticsModifierNode, ObserverModifierNode, OverlayFocusParticipant {
+  DelegatingNode(),
+  SemanticsModifierNode,
+  ObserverModifierNode,
+  FocusPropertiesModifierNode,
+  OverlayFocusParticipant {
   private var overlayHasFocus = false
+  private var isDetaching = false
   private val focusTargetNode = delegate(FocusTargetModifierNode(onFocusChange = ::onFocusChange))
   private val requestFocusAction = { focusTargetNode.requestFocus() }
 
@@ -150,12 +155,24 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
     get() = focusTargetNode.focusState.isFocused
 
   override fun onAttach() {
+    isDetaching = false
     observeFocusReleases()
     scheduleInitialFocusRequest()
   }
 
   override fun onDetach() {
     overlayHasFocus = false
+    isDetaching = true
+  }
+
+  override fun applyFocusProperties(focusProperties: FocusProperties) {
+    // Compose runs onDetach before it marks this node detached, and a focus search can run in
+    // between, for example when Android hands back the focus of a view removed with this content.
+    // Taking focus then leaves Compose holding a detached node as its focus.
+    if (isDetaching) {
+      focusProperties.canFocus = false
+      focusProperties.onEnter = { cancelFocusChange() }
+    }
   }
 
   override fun onObservedReadsChanged() {
@@ -220,6 +237,7 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
       FocusTargetModifierNode(focusability = Focusability.Never, onFocusChange = ::onFocusChange)
     )
   private var hasSavedFocus = false
+  private var isDetaching = false
   /** The [OverlayFocusNode] that itself had focus when this layer was last covered, if any. */
   private var savedFocusedTarget: OverlayFocusNode? = null
   private var pendingClear: Job? = null
@@ -237,10 +255,12 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     get() = focusGroupNode.focusState.hasFocus
 
   override fun onAttach() {
+    isDetaching = false
     updateCoverage()
   }
 
   override fun onDetach() {
+    isDetaching = true
     covered = false
     hasSavedFocus = false
     savedFocusedTarget = null
@@ -253,7 +273,9 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
   }
 
   override fun applyFocusProperties(focusProperties: FocusProperties) {
-    if (covered) focusProperties.onEnter = { cancelFocusChange() }
+    // Like a covered layer, a detaching one keeps focus out of its content. A focus search that
+    // runs before Compose marks the content detached could otherwise give it focus.
+    if (covered || isDetaching) focusProperties.onEnter = { cancelFocusChange() }
   }
 
   fun update(isCovered: () -> Boolean) {

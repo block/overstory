@@ -17,6 +17,7 @@ package com.squareup.ui.compose.overlays
 
 import android.view.View
 import android.widget.EditText
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -30,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
@@ -495,6 +497,33 @@ class OverlayFocusLayerTest {
     rule.onNodeWithTag(overlayTag).assertIsFocused()
     rule.onNodeWithTag(independentOverlayTag).assertIsNotFocused()
     rule.onNodeWithTag(editorTag).assertIsNotFocused()
+  }
+
+  @Test
+  fun contentOfRemovedLayerDoesNotTakeFocusWhileItDetaches() {
+    val isShown = mutableStateOf(true)
+    lateinit var hostView: View
+    rule.setContent {
+      hostView = LocalView.current
+      Column {
+        if (isShown.value) {
+          Box(Modifier.overlayFocusLayer { false }) {
+            Box(Modifier.size(48.dp).focusable()) {
+              AndroidView({ FocusReturningView(it, hostView) })
+            }
+          }
+        }
+        Box(Modifier.size(48.dp).testTag(overlayTag).focusable())
+      }
+    }
+
+    // Leave no view focused, so that the host searches its content for a target to focus.
+    rule.runOnIdle {
+      hostView.clearFocus()
+      isShown.value = false
+    }
+
+    rule.onNodeWithTag(overlayTag).requestFocus().assertIsFocused()
   }
 
   private companion object {
