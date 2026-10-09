@@ -15,6 +15,7 @@
  */
 package com.squareup.ui.compose.overlays
 
+import android.view.View
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -56,9 +57,11 @@ import kotlinx.coroutines.launch
  * Inside a covered [overlayFocusLayer], the request waits until the layer is uncovered. An
  * uncovered layer that does not restore its saved focus also asks this target to request focus
  * again while [requestInitialFocus] is true. While [requestInitialFocus] is true and this target is
- * not inside a covered layer, it also requests focus whenever a covered layer in the same window
- * releases focus. This covers a request that was declined because covered content had captured
- * focus, and focus that covered content took through an embedded View.
+ * not inside a covered layer, it also requests focus whenever a covered layer in its composition,
+ * or in a composition embedded in it, releases focus. This covers a request that was declined
+ * because covered content had captured focus, and focus that covered content took through an
+ * embedded View. Targets in separate compositions that do not contain the releasing layer do not
+ * request focus.
  *
  * @param enabled Whether this modifier participates in focus.
  * @param requestInitialFocus Whether to request focus when this modifier becomes active.
@@ -82,9 +85,10 @@ public fun Modifier.overlayFocusTarget(enabled: Boolean, requestInitialFocus: Bo
  * enter it, and [overlayFocusTarget] descendants wait to request initial focus. If focus enters
  * anyway, for example because a View embedded in the layer requests focus, the layer clears it
  * again. Each time the layer clears focus, [overlayFocusTarget]s outside covered layers that want
- * initial focus request it. When it is uncovered, it restores the saved descendant once after the
- * next frame applies its changes, so a covering overlay removed in that frame has released focus
- * first. It does not restore if focus has entered the layer since. If there is nothing to restore,
+ * initial focus request it, if they are in the layer's composition or in a composition that
+ * contains it. When it is uncovered, it restores the saved descendant once after the next frame
+ * applies its changes, so a covering overlay removed in that frame has released focus first. It
+ * does not restore if focus has entered the layer since. If there is nothing to restore,
  * [overlayFocusTarget] descendants that want initial focus request it.
  *
  * Layers can be nested; a layer inside a covered layer is covered as well. Restoration is exact
@@ -141,6 +145,10 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
   override val hasFocus: Boolean
     get() = focusTargetNode.focusState.hasFocus
 
+  /** Whether this target itself has focus, rather than one of its descendants. */
+  val isFocused: Boolean
+    get() = focusTargetNode.focusState.isFocused
+
   override fun onAttach() {
     observeFocusReleases()
     scheduleInitialFocusRequest()
@@ -166,6 +174,9 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
     if (shouldRequestFocus && isAttached) scheduleInitialFocusRequest()
   }
 
+  /** Restores focus to this target for a layer that saved it as focused. */
+  fun requestFocus(): Boolean = focusTargetNode.requestFocus()
+
   /** Requests initial focus for a layer that was uncovered without restoring focus. */
   fun requestInitialFocusAfterUncover() {
     requestWantedFocus()
@@ -184,7 +195,7 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
   }
 
   private fun observeFocusReleases() {
-    observeReads { overlayFocusReleases().count.intValue }
+    observeReads { overlayFocusReleases(requireView()).count.intValue }
   }
 
   /**
@@ -209,6 +220,8 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
       FocusTargetModifierNode(focusability = Focusability.Never, onFocusChange = ::onFocusChange)
     )
   private var hasSavedFocus = false
+  /** The [OverlayFocusNode] that itself had focus when this layer was last covered, if any. */
+  private var savedFocusedTarget: OverlayFocusNode? = null
   private var pendingClear: Job? = null
   private var pendingRestore: Job? = null
 
@@ -226,6 +239,7 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
   override fun onDetach() {
     covered = false
     hasSavedFocus = false
+    savedFocusedTarget = null
     pendingClear = null
     pendingRestore = null
   }
@@ -256,6 +270,11 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
   fun restoreSavedFocusAfterUncover(): Boolean {
     if (!hasSavedFocus) return false
     hasSavedFocus = false
+    val focusedTarget = savedFocusedTarget
+    savedFocusedTarget = null
+    // A restore request follows the child each focus target saved last, which for a target that
+    // had focus itself can be a child saved in an earlier cover.
+    if (focusedTarget != null) return focusedTarget.isAttached && focusedTarget.requestFocus()
     return restoreFocusedChild()
   }
 
@@ -274,11 +293,17 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     if (!hasFocus) return
     // A restore request only reaches the nearest focus target below a node, so every participant
     // that leads to the focused descendant saves its own step on the way down.
+    var focusedTarget: OverlayFocusNode? = null
     traverseDescendants(OverlayFocusTraverseKey) { participant ->
-      if ((participant as OverlayFocusParticipant).hasFocus) participant.saveFocusedChild()
+      if (participant is OverlayFocusNode && participant.isFocused) {
+        focusedTarget = participant
+      } else if ((participant as OverlayFocusParticipant).hasFocus) {
+        participant.saveFocusedChild()
+      }
       ContinueTraversal
     }
-    hasSavedFocus = saveFocusedChild()
+    savedFocusedTarget = focusedTarget
+    hasSavedFocus = focusedTarget != null || saveFocusedChild()
     // Clear once the frame that applies the coverage has finished, rather than while the change is
     // applied or before it is: until then, embedded views saving their own focus and the covering
     // overlay requesting focus still see focus where it was.
@@ -295,7 +320,7 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     // Force releases focus that a descendant captured, which declined the covering overlay's
     // request. Overlay focus targets that want focus request it again once it is released.
     currentValueOf(LocalFocusManager).clearFocus(force = true)
-    overlayFocusReleases().count.intValue++
+    notifyFocusReleased()
   }
 
   private fun uncover() {
@@ -353,18 +378,26 @@ private suspend fun awaitFrameApplied() {
 }
 
 /**
- * Counts, for one window, the times a covered [overlayFocusLayer] released focus. Native focus is
- * shared by the whole window, so a layer can release focus that an overlay in another composition
- * in the window wants.
+ * Counts the times a covered [overlayFocusLayer] in the composition of one view, or in a
+ * composition embedded in it, released focus. A layer can release focus that an overlay in a
+ * composition containing it wants, such as an overlay covering a view that hosts the layer.
  */
 private class OverlayFocusReleases {
   val count = mutableIntStateOf(0)
 }
 
-private fun DelegatableNode.overlayFocusReleases(): OverlayFocusReleases {
-  val rootView = requireView().rootView
-  return rootView.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleases?
-    ?: OverlayFocusReleases().also { rootView.setTag(R.id.overstory_overlay_focus_releases, it) }
+private fun overlayFocusReleases(view: View): OverlayFocusReleases =
+  view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleases?
+    ?: OverlayFocusReleases().also { view.setTag(R.id.overstory_overlay_focus_releases, it) }
+
+/** Notifies overlay focus targets in this node's composition and the compositions containing it. */
+private fun DelegatableNode.notifyFocusReleased() {
+  var view: View? = requireView()
+  while (view != null) {
+    val releases = view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleases?
+    if (releases != null) releases.count.intValue++
+    view = view.parent as? View
+  }
 }
 
 /** Whether this node is inside an [overlayFocusLayer] that is covered. */
