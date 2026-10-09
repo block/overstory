@@ -159,6 +159,28 @@ class OverlayFocusLayerTest {
   }
 
   @Test
+  fun uncoveringRestoresEditorBeforeOverlayThatStartsWantingFocus() {
+    val isCovered = mutableStateOf(false)
+    rule.setContent {
+      val isCoveredNow = isCovered.value
+      Box(
+        Modifier.overlayFocusLayer { isCoveredNow }
+          .testTag(overlayTag)
+          .overlayFocusTarget(enabled = true, requestInitialFocus = !isCoveredNow)
+      ) {
+        BasicTextField(rememberTextFieldState(), Modifier.testTag(editorTag))
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+
+    rule.runOnIdle { isCovered.value = true }
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+    rule.runOnIdle { isCovered.value = false }
+
+    rule.onNodeWithTag(editorTag).assertIsFocused()
+  }
+
+  @Test
   fun uncoveringWithoutSavedFocusRequestsOverlayInitialFocus() {
     val isCovered = mutableStateOf(false)
     val showEditor = mutableStateOf(true)

@@ -54,14 +54,14 @@ import kotlinx.coroutines.launch
  * Makes this overlay a focus target when [enabled]. When [requestInitialFocus] becomes true, it
  * requests focus once unless the target or one of its descendants already has focus.
  *
- * Inside a covered [overlayFocusLayer], the request waits until the layer is uncovered. An
- * uncovered layer that does not restore its saved focus also asks this target to request focus
- * again while [requestInitialFocus] is true. While [requestInitialFocus] is true and this target is
- * not inside a covered layer, it also requests focus whenever a covered layer in its composition,
- * or in a composition embedded in it, releases focus. This covers a request that was declined
- * because covered content had captured focus, and focus that covered content took through an
- * embedded View. Targets in separate compositions that do not contain the releasing layer do not
- * request focus.
+ * Inside a covered [overlayFocusLayer], the request waits until the layer is uncovered and has
+ * tried to restore its saved focus. An uncovered layer that does not restore its saved focus asks
+ * this target to request focus while [requestInitialFocus] is true. While [requestInitialFocus] is
+ * true and this target is not inside a covered layer, it also requests focus whenever a covered
+ * layer in its composition, or in a composition embedded in it, releases focus. This covers a
+ * request that was declined because covered content had captured focus, and focus that covered
+ * content took through an embedded View. Targets in separate compositions that do not contain the
+ * releasing layer do not request focus.
  *
  * @param enabled Whether this modifier participates in focus.
  * @param requestInitialFocus Whether to request focus when this modifier becomes active.
@@ -203,7 +203,7 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
    * target is covered itself.
    */
   private fun requestWantedFocus() {
-    if (requestInitialFocus && !overlayHasFocus && !isInCoveredLayer()) {
+    if (requestInitialFocus && !overlayHasFocus && !isInLayerHoldingFocusBack()) {
       focusTargetNode.requestFocus()
     }
   }
@@ -224,6 +224,10 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
   private var savedFocusedTarget: OverlayFocusNode? = null
   private var pendingClear: Job? = null
   private var pendingRestore: Job? = null
+
+  /** Whether this layer was uncovered and has not tried to restore its saved focus yet. */
+  val isRestorePending: Boolean
+    get() = pendingRestore != null
 
   /** Whether this layer itself is covered, regardless of the layers around it. */
   var covered = false
@@ -398,6 +402,19 @@ private fun DelegatableNode.notifyFocusReleased() {
     if (releases != null) releases.count.intValue++
     view = view.parent as? View
   }
+}
+
+/**
+ * Whether this node is inside an [overlayFocusLayer] that is covered or that will restore its saved
+ * focus, which asks this node to request focus if it does not restore any.
+ */
+private fun TraversableNode.isInLayerHoldingFocusBack(): Boolean {
+  var isHolding = false
+  traverseAncestors(OverlayFocusTraverseKey) { ancestor ->
+    isHolding = ancestor is OverlayFocusLayerNode && (ancestor.covered || ancestor.isRestorePending)
+    !isHolding
+  }
+  return isHolding
 }
 
 /** Whether this node is inside an [overlayFocusLayer] that is covered. */
