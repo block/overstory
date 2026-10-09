@@ -9,7 +9,7 @@
   keeps focus out of its content. When it is uncovered, it restores the descendant that had focus.
 - `Modifier.overlayFocusTarget` waits to request initial focus while it is inside a covered layer.
   It requests it again when the layer is uncovered without restoring focus, and when a covered
-  layer in the same window releases focus.
+  layer in its composition, or in a composition embedded in it, releases focus.
 
 ## 0.2.0 — 2026-10-07
 
