@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-10-14
+
+### Compatibility
+
+- Dependency, build, and runtime requirements are unchanged from 0.2.0. The new API is additive
+  and requires opting in to `ExperimentalComposeOverlaysApi`.
 
 ### Changes
 
