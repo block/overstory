@@ -87,7 +87,7 @@ that artifacts are available.
 - [Code of conduct](https://github.com/block/.github/blob/main/CODE_OF_CONDUCT.md)
 - [Apache 2.0 license](LICENSE)
 - Optional background: [Reimagining Android Dialogs with Jetpack Compose](https://www.youtube.com/watch?v=qZyT3j6Y2IU)
-  By Keith Abdulla, droidcon NYC 2025.
+  DroidCon 2025.
 
 ## Acknowledgments
 
