@@ -1,10 +1,35 @@
 # Overstory
 
-Sheets, modals, and anchored overlays for Jetpack Compose.
+Sheets, modals, and anchored overlays for Jetpack Compose, in your app's existing window.
 
-Overstory provides overlay hosting, keyed state and lifecycle, focus and input handling,
-placement, and sheet gestures. Applications supply visual design and navigation.
-The API is experimental.
+Overstory is a toolkit for building a consistent overlay system around your Android app's design
+and navigation. It renders overlays above screen content in the same Compose hierarchy, with
+keyed state and lifecycle, focus and input helpers, placement, and sheet gestures.
+You supply the visual design. The API is experimental.
+
+## Why Overstory?
+
+- **One place to coordinate overlays.** Drive a bottom-to-top stack from your own models. Stable
+  keys preserve each entry's state and lifecycle when reordered; covered entries have a configurable
+  lifecycle cap.
+- **Your design, reusable mechanics.** Combine scrims, focus helpers, anchor tracking, placement
+  strategies, and draggable sheets with your own layouts, animations, and dismissal rules.
+- **No extra dialog window.** Unlike platform `Dialog` and Android's
+  [Compose `Dialog`](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/window/AndroidDialog.android.kt),
+  `OverlayHost` does not create a separate window or dialog composition. Overlay content participates
+  in the host's layout and rendering, avoiding a separate dialog window's setup and teardown.
+
+Choose Overstory when you need a custom overlay system with shared stacking and interaction policies.
+For a standard confirmation, Material `AlertDialog` is simpler. Overstory is not a drop-in dialog:
+applications wire Back handling, dismissal, focus and accessibility behavior, insets, and navigation
+restoration. Overlays share the host window's bounds and window-level settings; use a separate window
+when you need independent window behavior.
+
+Keeping overlays in one window avoids additional dialog-window setup and surface management.
+In [Square's reported comparisons (11–14 minutes)](https://www.youtube.com/watch?v=qZyT3j6Y2IU&t=660s),
+the original Compose overlays delivered faster frames and a 14% smaller shallow heap than Square's
+Android-dialog implementation. These results reflect Square's tested flows; profile your own
+content and devices.
 
 ## Modules
 
@@ -66,6 +91,8 @@ that artifacts are available.
 
 ## Project resources
 
+- Optional background: [Reimagining Android Dialogs with Jetpack Compose](https://www.youtube.com/watch?v=qZyT3j6Y2IU)
+  By Keith Abdulla, droidcon NYC 2025.
 - [Contributing](CONTRIBUTING.md)
 - [Releasing](RELEASING.md)
 - [Changelog](CHANGELOG.md)
