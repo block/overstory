@@ -1,8 +1,8 @@
 # Overstory
 
-Overstory is a Jetpack Compose library for modals, popovers, and sheets in your app's existing
-content window. It layers composables over your screens without creating separate Android dialog
-windows. Overlays share the Compose hierarchy of the content they cover.
+Overstory is a toolkit for building overlays in Jetpack Compose. Use it for anchored overlays,
+modals, popovers, sheets, or your own custom overlay patterns. Content stays in your app's existing
+window and Compose hierarchy, avoiding separate Android dialog windows.
 
 - **Control the experience.** Use your own layouts and animations with reusable stacking, focus,
   placement, and sheet gestures. Preview overlays alongside your screens.
