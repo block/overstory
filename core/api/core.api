@@ -51,6 +51,7 @@ public abstract interface class com/squareup/ui/compose/overlays/OverlayAnchorRe
 }
 
 public final class com/squareup/ui/compose/overlays/OverlayFocusKt {
+	public static final fun overlayFocusLayer (Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function0;)Landroidx/compose/ui/Modifier;
 	public static final fun overlayFocusTarget (Landroidx/compose/ui/Modifier;ZZ)Landroidx/compose/ui/Modifier;
 }
 
