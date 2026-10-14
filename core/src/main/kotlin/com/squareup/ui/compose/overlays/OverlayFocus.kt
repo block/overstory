@@ -16,7 +16,6 @@
 package com.squareup.ui.compose.overlays
 
 import android.view.View
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusProperties
@@ -137,15 +136,17 @@ private sealed interface OverlayFocusParticipant : TraversableNode, FocusRequest
 private object OverlayFocusTraverseKey
 
 private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
-  DelegatingNode(),
-  SemanticsModifierNode,
-  ObserverModifierNode,
-  FocusPropertiesModifierNode,
-  OverlayFocusParticipant {
+  DelegatingNode(), SemanticsModifierNode, FocusPropertiesModifierNode, OverlayFocusParticipant {
   private var overlayHasFocus = false
   private var isDetaching = false
   private val focusTargetNode = delegate(FocusTargetModifierNode(onFocusChange = ::onFocusChange))
   private val requestFocusAction = { focusTargetNode.requestFocus() }
+  /** The listeners this target is registered with to hear about released focus, while attached. */
+  private var focusReleaseListeners: OverlayFocusReleaseListeners? = null
+  // Requests after the layer finishes releasing focus, rather than in the middle of it.
+  private val onFocusReleased: () -> Unit = {
+    coroutineScope.launch { if (isAttached) requestWantedFocus() }
+  }
 
   override val hasFocus: Boolean
     get() = focusTargetNode.focusState.hasFocus
@@ -156,13 +157,16 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
 
   override fun onAttach() {
     isDetaching = false
-    observeFocusReleases()
+    focusReleaseListeners =
+      overlayFocusReleaseListeners(requireView()).also { it.add(onFocusReleased) }
     scheduleInitialFocusRequest()
   }
 
   override fun onDetach() {
     overlayHasFocus = false
     isDetaching = true
+    focusReleaseListeners?.remove(onFocusReleased)
+    focusReleaseListeners = null
   }
 
   override fun applyFocusProperties(focusProperties: FocusProperties) {
@@ -173,11 +177,6 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
       focusProperties.canFocus = false
       focusProperties.onEnter = { cancelFocusChange() }
     }
-  }
-
-  override fun onObservedReadsChanged() {
-    observeFocusReleases()
-    requestWantedFocus()
   }
 
   override fun SemanticsPropertyReceiver.applySemantics() {
@@ -209,10 +208,6 @@ private class OverlayFocusNode(private var requestInitialFocus: Boolean) :
     if (!requestInitialFocus) return
     // A covered layer asks again once it is uncovered or once it releases focus.
     sideEffect { if (isAttached) requestWantedFocus() }
-  }
-
-  private fun observeFocusReleases() {
-    observeReads { overlayFocusReleases(requireView()).count.intValue }
   }
 
   /**
@@ -406,24 +401,41 @@ private suspend fun awaitFrameApplied() {
 }
 
 /**
- * Counts the times a covered [overlayFocusLayer] in the composition of one view, or in a
- * composition embedded in it, released focus. A layer can release focus that an overlay in a
- * composition containing it wants, such as an overlay covering a view that hosts the layer.
+ * The attached [overlayFocusTarget]s in the composition of one view to notify when a covered
+ * [overlayFocusLayer] in that composition, or in a composition embedded in it, releases focus. A
+ * layer can release focus that an overlay in a composition containing it wants, such as an overlay
+ * covering a view that hosts the layer.
  */
-private class OverlayFocusReleases {
-  val count = mutableIntStateOf(0)
+private class OverlayFocusReleaseListeners {
+  private val listeners = mutableSetOf<() -> Unit>()
+
+  fun add(listener: () -> Unit) {
+    listeners += listener
+  }
+
+  fun remove(listener: () -> Unit) {
+    listeners -= listener
+  }
+
+  fun notifyFocusReleased() {
+    // A listener can detach a target, which removes its listener.
+    listeners.toList().forEach { it() }
+  }
 }
 
-private fun overlayFocusReleases(view: View): OverlayFocusReleases =
-  view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleases?
-    ?: OverlayFocusReleases().also { view.setTag(R.id.overstory_overlay_focus_releases, it) }
+private fun overlayFocusReleaseListeners(view: View): OverlayFocusReleaseListeners =
+  view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleaseListeners?
+    ?: OverlayFocusReleaseListeners().also {
+      view.setTag(R.id.overstory_overlay_focus_releases, it)
+    }
 
 /** Notifies overlay focus targets in this node's composition and the compositions containing it. */
 private fun DelegatableNode.notifyFocusReleased() {
   var view: View? = requireView()
   while (view != null) {
-    val releases = view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleases?
-    if (releases != null) releases.count.intValue++
+    val listeners =
+      view.getTag(R.id.overstory_overlay_focus_releases) as OverlayFocusReleaseListeners?
+    listeners?.notifyFocusReleased()
     view = view.parent as? View
   }
 }
