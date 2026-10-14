@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Compatibility
+
+- `OverlayHost` and `ViewCompatibleOverlayHost` gain a defaulted parameter. Existing source
+  compiles unchanged, but callers compiled against 0.3.0 must be recompiled because the JVM
+  signatures change. Both APIs remain experimental.
+
+### Changes
+
+- Add an experimental `overlayContainer` parameter to `OverlayHost` and
+  `ViewCompatibleOverlayHost`. It wraps the whole overlay stack once, for example to provide a
+  composition local or shared layout to every entry, and never wraps the covered content. The
+  default, `DefaultOverlayContainer`, places the stack unwrapped.
+
 ## 0.3.0 — 2026-10-14
 
 ### Compatibility

@@ -9,7 +9,7 @@ public final class com/squareup/ui/compose/overlays/CenterSeekingOverlayPlacemen
 public final class com/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt {
 	public static final field INSTANCE Lcom/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt;
 	public fun <init> ()V
-	public final fun getLambda$-81405369$core_release ()Lkotlin/jvm/functions/Function3;
+	public final fun getLambda$-214091193$core_release ()Lkotlin/jvm/functions/Function3;
 }
 
 public final class com/squareup/ui/compose/overlays/DirectionalOverlayPlacement : com/squareup/ui/compose/overlays/OverlayPlacementStrategy {
@@ -56,7 +56,8 @@ public final class com/squareup/ui/compose/overlays/OverlayFocusKt {
 }
 
 public final class com/squareup/ui/compose/overlays/OverlayHostKt {
-	public static final fun OverlayHost (Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function4;Landroidx/compose/runtime/Composer;II)V
+	public static final fun DefaultOverlayContainer (Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V
+	public static final fun OverlayHost (Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function4;Landroidx/compose/runtime/Composer;II)V
 }
 
 public final class com/squareup/ui/compose/overlays/OverlayPlacementPreference : java/lang/Enum {
