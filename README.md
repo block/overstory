@@ -1,10 +1,25 @@
 # Overstory
 
-Sheets, modals, and anchored overlays for Jetpack Compose.
+Overstory is a toolkit for building overlays in Jetpack Compose. Use it for anchored overlays,
+modals, popovers, sheets, or your own custom overlay patterns. Content stays in your app's existing
+window and Compose hierarchy, avoiding separate Android dialog windows.
 
-Overstory provides overlay hosting, keyed state and lifecycle, focus and input handling,
-placement, and sheet gestures. Applications supply visual design and navigation.
-The API is experimental.
+- **Control the experience.** Use your own layouts and animations with reusable stacking, focus,
+  placement, and sheet gestures. Preview overlays alongside your screens.
+- **Avoid extra window overhead.** Unlike platform and Compose dialogs, Overstory needs no
+  additional dialog window or surface to display an overlay.
+
+Square's original implementation measured **24–26% lower P99 CPU frame duration** across two
+50-iteration benchmarks on a physical Square handheld, plus **14% less shallow heap** in a heap
+comparison ([results, 11–14 minutes](https://www.youtube.com/watch?v=qZyT3j6Y2IU&t=660s)).
+Results depend on your content and hardware.
+
+Choose Overstory for custom Compose overlays that fit within your app content window. You supply
+styling, navigation, and dismissal behavior. The API is experimental. Keyboard-aware layouts can use
+its opt-in pan modifier or Compose inset padding for resizing; overlays cannot draw above the
+system keyboard window.
+
+Start with the [engine guide](docs/engine-guide.md) for hosting and integration examples.
 
 ## Modules
 
@@ -24,8 +39,7 @@ flowchart LR
   R --> N["Application navigation and overlay models"]
 ```
 
-See the [engine guide](docs/engine-guide.md) and the
-[saved-state compatibility decision](docs/saveable-registry.md).
+See the [saved-state compatibility decision](docs/saveable-registry.md) for View integration details.
 
 ## Build and test
 
@@ -73,6 +87,7 @@ that artifacts are available.
 - [Governance](GOVERNANCE.md)
 - [Code of conduct](https://github.com/block/.github/blob/main/CODE_OF_CONDUCT.md)
 - [Apache 2.0 license](LICENSE)
+- Optional background: [DroidCon 2025: Reimagining Android Dialogs with Jetpack Compose](https://www.youtube.com/watch?v=qZyT3j6Y2IU)
 
 ## Acknowledgments
 
