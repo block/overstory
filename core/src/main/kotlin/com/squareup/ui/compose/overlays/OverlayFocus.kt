@@ -418,7 +418,7 @@ private class OverlayFocusReleaseListeners {
   }
 
   fun notifyFocusReleased() {
-    // A listener can detach a target, which removes its listener.
+    // Iterate a copy, so that targets can register or unregister while listeners run.
     listeners.toList().forEach { it() }
   }
 }
