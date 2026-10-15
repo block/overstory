@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Compatibility
+
+- `OverlayHost` and `ViewCompatibleOverlayHost` gain a defaulted `overlayContainer` parameter
+  before `overlayContent`. Calls that name `overlayContent` or pass it as a trailing lambda compile
+  unchanged. Calls that pass `overlayContent` positionally inside the parentheses no longer
+  compile, because it now binds to `overlayContainer`; name the argument or move it to a trailing
+  lambda. Callers compiled against 0.3.0 must be recompiled because the JVM signatures change.
+  Both APIs remain experimental.
+
+### Changes
+
+- Add an experimental `overlayContainer` parameter to `OverlayHost` and
+  `ViewCompatibleOverlayHost`. It wraps the whole overlay stack once, for example to provide a
+  composition local or shared layout to every entry, and never wraps the covered content. The
+  default, `DefaultOverlayContainer`, places the stack unwrapped.
+
 ## 0.3.0 — 2026-10-14
 
 ### Compatibility

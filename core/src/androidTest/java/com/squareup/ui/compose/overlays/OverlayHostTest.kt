@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertTextEquals
@@ -243,4 +244,33 @@ class OverlayHostTest {
       }
     assertThat(error).hasMessageThat().contains(message)
   }
+
+  @Test
+  fun overlayContainerProvidesLocalsToEveryEntryButNotCoveredContent() {
+    val overlays = mutableStateListOf("first")
+    val owners = mutableMapOf<String, LifecycleOwner>()
+    rule.setContent {
+      OverlayHost(
+        overlays = overlays,
+        keyOf = { it },
+        coveredContent = { BasicText(LocalContainerLabel.current, Modifier.testTag("covered")) },
+        overlayContainer = { content ->
+          CompositionLocalProvider(LocalContainerLabel provides "container") { content() }
+        },
+      ) { entry, _ ->
+        owners[entry] = LocalLifecycleOwner.current
+        BasicText("$entry:${LocalContainerLabel.current}", Modifier.testTag(entry))
+      }
+    }
+    rule.onNodeWithTag("covered").assertTextEquals("none")
+    rule.onNodeWithTag("first").assertTextEquals("first:container")
+    val firstOwner = rule.runOnIdle { owners.getValue("first") }
+
+    rule.runOnIdle { overlays += "second" }
+    rule.onNodeWithTag("first").assertTextEquals("first:container")
+    rule.onNodeWithTag("second").assertTextEquals("second:container")
+    rule.runOnIdle { assertThat(owners.getValue("first")).isSameInstanceAs(firstOwner) }
+  }
 }
+
+private val LocalContainerLabel = staticCompositionLocalOf { "none" }

@@ -59,6 +59,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
  *   can attach its saved-state registry. It must invoke its content exactly once in the same
  *   composition; the lifecycle is activated before that content renders. Keep the wrapper's
  *   composition structure stable for the lifetime of an entry.
+ * @param overlayContainer Optional wrapper around the whole overlay stack, for example to provide a
+ *   composition local, shared layout, or transition to every entry. It never wraps [coveredContent]
+ *   and is called even when [overlays] is empty. It must invoke its content exactly once in the
+ *   same composition and keep its composition structure stable, because moving the content discards
+ *   each entry's state and lifecycle. Defaults to [DefaultOverlayContainer].
  * @param overlayContent Renderer for an entry, given whether it is topmost.
  */
 @ExperimentalComposeOverlaysApi
@@ -74,6 +79,8 @@ public fun <T> OverlayHost(
   overlayContentWrapper: @Composable (content: @Composable () -> Unit) -> Unit = { content ->
     content()
   },
+  overlayContainer: @Composable (content: @Composable () -> Unit) -> Unit =
+    ::DefaultOverlayContainer,
   overlayContent: @Composable (overlay: T, isTopmost: Boolean) -> Unit,
 ) {
   val keys = overlays.map(keyOf)
@@ -89,23 +96,33 @@ public fun <T> OverlayHost(
     val holder = rememberSaveableStateHolder()
     Box(Modifier.fillMaxSize(), propagateMinConstraints = true) { coveredContent() }
 
-    overlays.forEachIndexed { index, overlay ->
-      val overlayKey = keys[index]
-      val isTopmost = index == overlays.lastIndex
-      key(overlayKey) {
-        holder.SaveableStateProvider(overlayKey) {
-          val lifecycleOwner = rememberOverlayLifecycleOwner(maxLifecycleState(overlay, isTopmost))
-          CompositionLocalProvider(LocalLifecycleOwner provides lifecycleOwner) {
-            overlayContentWrapper {
-              // Integrations must restore their registry before ON_CREATE, while embedded Views
-              // must see an activated lifecycle as soon as their content is attached.
-              lifecycleOwner.activate()
-              overlayContent(overlay, isTopmost)
+    overlayContainer {
+      overlays.forEachIndexed { index, overlay ->
+        val overlayKey = keys[index]
+        val isTopmost = index == overlays.lastIndex
+        key(overlayKey) {
+          holder.SaveableStateProvider(overlayKey) {
+            val lifecycleOwner =
+              rememberOverlayLifecycleOwner(maxLifecycleState(overlay, isTopmost))
+            CompositionLocalProvider(LocalLifecycleOwner provides lifecycleOwner) {
+              overlayContentWrapper {
+                // Integrations must restore their registry before ON_CREATE, while embedded Views
+                // must see an activated lifecycle as soon as their content is attached.
+                lifecycleOwner.activate()
+                overlayContent(overlay, isTopmost)
+              }
             }
           }
+          DisposableEffect(Unit) { onDispose { holder.removeState(overlayKey) } }
         }
-        DisposableEffect(Unit) { onDispose { holder.removeState(overlayKey) } }
       }
     }
   }
+}
+
+/** The default `overlayContainer` for [OverlayHost], which places the overlay stack unwrapped. */
+@ExperimentalComposeOverlaysApi
+@Composable
+public fun DefaultOverlayContainer(content: @Composable () -> Unit) {
+  content()
 }

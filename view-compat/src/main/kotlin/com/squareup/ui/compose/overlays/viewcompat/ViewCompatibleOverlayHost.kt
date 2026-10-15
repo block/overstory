@@ -18,6 +18,7 @@ package com.squareup.ui.compose.overlays.viewcompat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle.State
+import com.squareup.ui.compose.overlays.DefaultOverlayContainer
 import com.squareup.ui.compose.overlays.ExperimentalComposeOverlaysApi
 import com.squareup.ui.compose.overlays.OverlayHost
 
@@ -35,6 +36,8 @@ import com.squareup.ui.compose.overlays.OverlayHost
  * @param maxLifecycleState Lifecycle cap for each entry, given whether it is topmost. Must return
  *   [State.CREATED], [State.STARTED], or [State.RESUMED].
  * @param coveredContent Content displayed behind the overlay stack, measured at the host's size.
+ * @param overlayContainer Optional wrapper around the whole overlay stack. It never wraps
+ *   [coveredContent]. See [OverlayHost] for its contract.
  * @param overlayContent Renderer for an entry, given whether it is topmost.
  */
 @ExperimentalComposeOverlaysApi
@@ -47,6 +50,8 @@ public fun <T> ViewCompatibleOverlayHost(
   maxLifecycleState: (overlay: T, isTopmost: Boolean) -> State = { _, isTopmost ->
     if (isTopmost) State.RESUMED else State.CREATED
   },
+  overlayContainer: @Composable (content: @Composable () -> Unit) -> Unit =
+    ::DefaultOverlayContainer,
   overlayContent: @Composable (overlay: T, isTopmost: Boolean) -> Unit,
 ) {
   OverlayHost(
@@ -56,6 +61,7 @@ public fun <T> ViewCompatibleOverlayHost(
     modifier = modifier,
     maxLifecycleState = maxLifecycleState,
     overlayContentWrapper = { content -> ViewSavedStateRegistry(content) },
+    overlayContainer = overlayContainer,
     overlayContent = overlayContent,
   )
 }
