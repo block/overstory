@@ -4,9 +4,12 @@
 
 ### Compatibility
 
-- `OverlayHost` and `ViewCompatibleOverlayHost` gain a defaulted parameter. Existing source
-  compiles unchanged, but callers compiled against 0.3.0 must be recompiled because the JVM
-  signatures change. Both APIs remain experimental.
+- `OverlayHost` and `ViewCompatibleOverlayHost` gain a defaulted `overlayContainer` parameter
+  before `overlayContent`. Calls that name `overlayContent` or pass it as a trailing lambda compile
+  unchanged. Calls that pass `overlayContent` positionally inside the parentheses no longer
+  compile, because it now binds to `overlayContainer`; name the argument or move it to a trailing
+  lambda. Callers compiled against 0.3.0 must be recompiled because the JVM signatures change.
+  Both APIs remain experimental.
 
 ### Changes
 
