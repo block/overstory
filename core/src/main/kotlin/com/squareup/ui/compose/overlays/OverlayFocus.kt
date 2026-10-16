@@ -16,6 +16,7 @@
 package com.squareup.ui.compose.overlays
 
 import android.view.View
+import android.view.ViewTreeObserver
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusProperties
@@ -46,8 +47,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.focused
 import androidx.compose.ui.semantics.requestFocus
+import kotlin.coroutines.resume
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Makes this overlay a focus target when [enabled]. When [requestInitialFocus] becomes true, it
@@ -86,8 +90,10 @@ public fun Modifier.overlayFocusTarget(enabled: Boolean, requestInitialFocus: Bo
  * again. Each time the layer clears focus, [overlayFocusTarget]s outside covered layers that want
  * initial focus request it, if they are in the layer's composition or in a composition that
  * contains it. When it is uncovered, it restores the saved descendant once after the next frame
- * applies its changes, so a covering overlay removed in that frame has released focus first. It
- * does not restore if focus has entered the layer since. If there is nothing to restore,
+ * applies its changes and the window lays out any changes pending then, so a covering overlay
+ * removed in that frame has released focus first, including from a separate composition. It does
+ * not restore if focus has entered the layer since, or if a view that neither contains nor is
+ * contained by the layer's composition has taken it. If there is nothing to restore,
  * [overlayFocusTarget] descendants that want initial focus request it.
  *
  * Layers can be nested; a layer inside a covered layer is covered as well. Restoration is exact
@@ -349,9 +355,11 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     pendingClear = null
     // A layer still inside a covered layer is restored, if needed, once that layer is uncovered.
     if (isInCoveredLayer()) return
+    val view = requireView()
     pendingRestore =
       coroutineScope.launch {
         awaitFrameApplied()
+        withTimeoutOrNull(MaxPendingLayoutWaitMillis) { awaitPendingLayout(view) }
         restoreFocusAfterUncover()
       }
   }
@@ -362,8 +370,11 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     if (!isAttached) return
     // An enclosing layer that is still covered asks this layer to restore once it is uncovered.
     if (covered || isInCoveredLayer()) return
-    if (hasFocus) {
+    // Focus that entered the layer, or that a view outside this layer's composition took, since
+    // it was covered stays where it is.
+    if (hasFocus || isFocusHeldOutsideComposition()) {
       hasSavedFocus = false
+      savedFocusedTarget = null
       return
     }
     if (restoreSavedFocusAfterUncover() || hasFocus) return
@@ -401,6 +412,51 @@ private suspend fun awaitFrameApplied() {
 }
 
 /**
+ * Suspends until the window of [view] has finished the layout pass it has pending, if any. When a
+ * view that has focus clears it, such as a composition whose focused overlay was removed, Android
+ * gives focus to the first focusable view in the window. If layout is pending then, the next layout
+ * pass checks that focus again and can clear it without moving it anywhere, which would otherwise
+ * drop focus that a layer had already seen enter it.
+ *
+ * A view outside a window does not lay out until it is attached again, so this does not wait for
+ * one, and stops waiting if [view] leaves its window. A window can also leave layout pending
+ * without running it, for example while it is stopped, so callers bound the wait.
+ */
+private suspend fun awaitPendingLayout(view: View) {
+  if (!view.isAttachedToWindow || !view.rootView.isLayoutRequested) return
+  val observer = view.viewTreeObserver
+  suspendCancellableCoroutine { continuation ->
+    val stopWaiting =
+      object : ViewTreeObserver.OnGlobalLayoutListener, View.OnAttachStateChangeListener {
+        override fun onGlobalLayout() = resume()
+
+        override fun onViewAttachedToWindow(v: View) = Unit
+
+        override fun onViewDetachedFromWindow(v: View) = resume()
+
+        fun remove() {
+          if (observer.isAlive) observer.removeOnGlobalLayoutListener(this)
+          view.removeOnAttachStateChangeListener(this)
+        }
+
+        private fun resume() {
+          remove()
+          if (continuation.isActive) continuation.resume(Unit)
+        }
+      }
+    observer.addOnGlobalLayoutListener(stopWaiting)
+    view.addOnAttachStateChangeListener(stopWaiting)
+    continuation.invokeOnCancellation { stopWaiting.remove() }
+  }
+}
+
+/**
+ * The longest a layer waits for [awaitPendingLayout] before it restores anyway. A window normally
+ * lays out in the frame that requested it, well within this.
+ */
+private const val MaxPendingLayoutWaitMillis = 500L
+
+/**
  * The attached [overlayFocusTarget]s in the composition of one view to notify when a covered
  * [overlayFocusLayer] in that composition, or in a composition embedded in it, releases focus. A
  * layer can release focus that an overlay in a composition containing it wants, such as an overlay
@@ -428,6 +484,22 @@ private fun overlayFocusReleaseListeners(view: View): OverlayFocusReleaseListene
     ?: OverlayFocusReleaseListeners().also {
       view.setTag(R.id.overstory_overlay_focus_releases, it)
     }
+
+/**
+ * Whether a view that neither contains nor is contained by this node's composition has the window's
+ * focus. Such a view is treated as having taken focus on purpose, for example from a callback that
+ * runs as the covering overlay leaves. Outside touch mode, Android can also hand focus to such a
+ * view when a covering overlay in a separate composition leaves, if it comes first in the window's
+ * focus order; the layer does not restore over that focus either.
+ */
+private fun DelegatableNode.isFocusHeldOutsideComposition(): Boolean {
+  val host = requireView()
+  val focused = host.rootView.findFocus() ?: return false
+  return focused !== host && !host.isDescendantOf(focused) && !focused.isDescendantOf(host)
+}
+
+private fun View.isDescendantOf(ancestor: View): Boolean =
+  generateSequence(parent) { it.parent }.any { it === ancestor }
 
 /** Notifies overlay focus targets in this node's composition and the compositions containing it. */
 private fun DelegatableNode.notifyFocusReleased() {
