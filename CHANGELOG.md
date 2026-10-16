@@ -10,8 +10,8 @@
 - `Modifier.overlayFocusLayer` restores focus when the covering overlay is in a separate
   composition, such as a sibling `ComposeView`. Removing that overlay could make Android move
   focus into the layer and then clear it during the next layout pass, so the layer neither restored
-  its saved focus nor kept the focus Android gave it. The layer now waits for pending layout before
-  it restores.
+  its saved focus nor kept the focus Android gave it. The layer now waits for pending layout, for up
+  to half a second, before it restores.
 
 ## 0.3.0 — 2026-10-14
 

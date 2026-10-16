@@ -15,6 +15,7 @@
  */
 package com.squareup.ui.compose.overlays
 
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -37,6 +38,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.requestFocus
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 
@@ -51,6 +55,12 @@ import org.junit.Test
 class OverlayFocusLayerTest {
 
   @get:Rule val rule = createComposeRule()
+
+  @After
+  fun restoreTouchMode() {
+    // Touch mode is shared by every window, so it outlives the test that leaves it.
+    InstrumentationRegistry.getInstrumentation().setInTouchMode(true)
+  }
 
   @Test
   fun dismissingCoveringOverlayRestoresFocusedEditor() {
@@ -629,10 +639,10 @@ class OverlayFocusLayerTest {
 
   @Test
   fun focusLeftInSiblingCompositionByCoveringOverlayIsRestored() {
-    // Outside touch mode, the overlay's composition clearing its focus makes Android move it.
-    InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
     val isCovered = mutableStateOf(false)
+    lateinit var view: View
     rule.setContent {
+      view = LocalView.current
       Column {
         AndroidView(
           factory = { context ->
@@ -664,13 +674,90 @@ class OverlayFocusLayerTest {
         )
       }
     }
+    // Outside touch mode, the overlay's composition clearing its focus makes Android move it.
+    leaveTouchMode(view)
     rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
     rule.runOnIdle { isCovered.value = true }
     rule.onNodeWithTag(overlayTag).assertIsFocused()
     rule.onNodeWithTag(editorTag).assertIsNotFocused()
-    rule.runOnIdle { isCovered.value = false }
+    rule.runOnIdle {
+      // Removing the overlay leaves layout pending as well, but pin it rather than rely on that.
+      view.rootView.requestLayout()
+      isCovered.value = false
+    }
     rule.onNodeWithTag(editorTag).assertIsFocused()
     rule.onNodeWithTag(firstFocusableTag).assertIsNotFocused()
+  }
+
+  @Test
+  fun layoutThatStaysPendingDoesNotHoldBackRestoreForever() {
+    val isCovered = mutableStateOf(false)
+    lateinit var view: View
+    rule.setContent {
+      view = LocalView.current
+      Box(Modifier.overlayFocusLayer { isCovered.value }) {
+        Box(Modifier.size(48.dp).testTag(editorTag).focusable())
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { isCovered.value = true }
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+
+    rule.runOnIdle {
+      // Marks layout pending without scheduling a pass, so the window does not lay out.
+      view.rootView.forceLayout()
+      isCovered.value = false
+    }
+
+    rule.waitUntil(timeoutMillis = 5_000) {
+      rule.onAllNodes(hasTestTag(editorTag) and isFocused()).fetchSemanticsNodes().isNotEmpty()
+    }
+    rule.runOnIdle { check(view.rootView.isLayoutRequested) }
+  }
+
+  @Test
+  fun layerCoveredAgainWhileWaitingForLayoutStaysCovered() {
+    val isCovered = mutableStateOf(false)
+    lateinit var view: View
+    rule.setContent {
+      view = LocalView.current
+      Column {
+        Box(Modifier.overlayFocusLayer { isCovered.value }) {
+          Box(Modifier.size(48.dp).testTag(editorTag).focusable())
+        }
+        if (isCovered.value) {
+          Box(
+            Modifier.size(48.dp)
+              .testTag(overlayTag)
+              .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+          )
+        }
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { isCovered.value = true }
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.runOnIdle {
+      // Marks layout pending without scheduling a pass, so the layer waits to restore.
+      view.rootView.forceLayout()
+      isCovered.value = false
+    }
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+
+    rule.runOnIdle { isCovered.value = true }
+    rule.runOnIdle { view.rootView.requestLayout() }
+
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+    rule.runOnIdle { isCovered.value = false }
+    rule.onNodeWithTag(editorTag).assertIsFocused()
+  }
+
+  private fun leaveTouchMode(view: View) {
+    // Touch mode set through Instrumentation does not reach a window that is already showing on
+    // every API level, but a navigation key takes the window out of touch mode.
+    InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN)
+    rule.waitUntil { !view.isInTouchMode }
   }
 
   private companion object {

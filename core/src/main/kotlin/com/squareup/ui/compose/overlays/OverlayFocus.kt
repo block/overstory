@@ -51,6 +51,7 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Makes this overlay a focus target when [enabled]. When [requestInitialFocus] becomes true, it
@@ -358,7 +359,7 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     pendingRestore =
       coroutineScope.launch {
         awaitFrameApplied()
-        awaitPendingLayout(view)
+        withTimeoutOrNull(MaxPendingLayoutWaitMillis) { awaitPendingLayout(view) }
         restoreFocusAfterUncover()
       }
   }
@@ -418,7 +419,8 @@ private suspend fun awaitFrameApplied() {
  * drop focus that a layer had already seen enter it.
  *
  * A view outside a window does not lay out until it is attached again, so this does not wait for
- * one, and stops waiting if [view] leaves its window.
+ * one, and stops waiting if [view] leaves its window. A window can also leave layout pending
+ * without running it, for example while it is stopped, so callers bound the wait.
  */
 private suspend fun awaitPendingLayout(view: View) {
   if (!view.isAttachedToWindow || !view.rootView.isLayoutRequested) return
@@ -447,6 +449,12 @@ private suspend fun awaitPendingLayout(view: View) {
     continuation.invokeOnCancellation { stopWaiting.remove() }
   }
 }
+
+/**
+ * The longest a layer waits for [awaitPendingLayout] before it restores anyway. A window normally
+ * lays out in the frame that requested it, well within this.
+ */
+private const val MaxPendingLayoutWaitMillis = 500L
 
 /**
  * The attached [overlayFocusTarget]s in the composition of one view to notify when a covered
