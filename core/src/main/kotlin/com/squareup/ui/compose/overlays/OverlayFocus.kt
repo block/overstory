@@ -87,7 +87,8 @@ public fun Modifier.overlayFocusTarget(enabled: Boolean, requestInitialFocus: Bo
  * initial focus request it, if they are in the layer's composition or in a composition that
  * contains it. When it is uncovered, it restores the saved descendant once after the next frame
  * applies its changes, so a covering overlay removed in that frame has released focus first. It
- * does not restore if focus has entered the layer since. If there is nothing to restore,
+ * does not restore if focus has entered the layer since, or if a view that neither contains nor is
+ * contained by the layer's composition has taken it. If there is nothing to restore,
  * [overlayFocusTarget] descendants that want initial focus request it.
  *
  * Layers can be nested; a layer inside a covered layer is covered as well. Restoration is exact
@@ -362,8 +363,11 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     if (!isAttached) return
     // An enclosing layer that is still covered asks this layer to restore once it is uncovered.
     if (covered || isInCoveredLayer()) return
-    if (hasFocus) {
+    // Focus that entered the layer, or that a view outside this layer's composition took, since
+    // it was covered stays where it is.
+    if (hasFocus || isFocusHeldOutsideComposition()) {
       hasSavedFocus = false
+      savedFocusedTarget = null
       return
     }
     if (restoreSavedFocusAfterUncover() || hasFocus) return
@@ -428,6 +432,20 @@ private fun overlayFocusReleaseListeners(view: View): OverlayFocusReleaseListene
     ?: OverlayFocusReleaseListeners().also {
       view.setTag(R.id.overstory_overlay_focus_releases, it)
     }
+
+/**
+ * Whether a view that neither contains nor is contained by this node's composition has the window's
+ * focus. Focus a covering overlay held falls back to the composition, or one containing it, once
+ * the overlay leaves; a view elsewhere that has focus took it.
+ */
+private fun DelegatableNode.isFocusHeldOutsideComposition(): Boolean {
+  val host = requireView()
+  val focused = host.rootView.findFocus() ?: return false
+  return focused !== host && !host.isDescendantOf(focused) && !focused.isDescendantOf(host)
+}
+
+private fun View.isDescendantOf(ancestor: View): Boolean =
+  generateSequence(parent) { it.parent }.any { it === ancestor }
 
 /** Notifies overlay focus targets in this node's composition and the compositions containing it. */
 private fun DelegatableNode.notifyFocusReleased() {
