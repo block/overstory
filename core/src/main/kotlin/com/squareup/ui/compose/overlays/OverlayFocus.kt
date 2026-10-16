@@ -416,22 +416,35 @@ private suspend fun awaitFrameApplied() {
  * gives focus to the first focusable view in the window. If layout is pending then, the next layout
  * pass checks that focus again and can clear it without moving it anywhere, which would otherwise
  * drop focus that a layer had already seen enter it.
+ *
+ * A view outside a window does not lay out until it is attached again, so this does not wait for
+ * one, and stops waiting if [view] leaves its window.
  */
 private suspend fun awaitPendingLayout(view: View) {
-  val rootView = view.rootView
-  if (!rootView.isLayoutRequested) return
+  if (!view.isAttachedToWindow || !view.rootView.isLayoutRequested) return
+  val observer = view.viewTreeObserver
   suspendCancellableCoroutine { continuation ->
-    val listener =
-      object : ViewTreeObserver.OnGlobalLayoutListener {
-        override fun onGlobalLayout() {
-          rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+    val stopWaiting =
+      object : ViewTreeObserver.OnGlobalLayoutListener, View.OnAttachStateChangeListener {
+        override fun onGlobalLayout() = resume()
+
+        override fun onViewAttachedToWindow(v: View) = Unit
+
+        override fun onViewDetachedFromWindow(v: View) = resume()
+
+        fun remove() {
+          if (observer.isAlive) observer.removeOnGlobalLayoutListener(this)
+          view.removeOnAttachStateChangeListener(this)
+        }
+
+        private fun resume() {
+          remove()
           if (continuation.isActive) continuation.resume(Unit)
         }
       }
-    rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
-    continuation.invokeOnCancellation {
-      rootView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
-    }
+    observer.addOnGlobalLayoutListener(stopWaiting)
+    view.addOnAttachStateChangeListener(stopWaiting)
+    continuation.invokeOnCancellation { stopWaiting.remove() }
   }
 }
 

@@ -42,6 +42,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -628,6 +629,8 @@ class OverlayFocusLayerTest {
 
   @Test
   fun focusLeftInSiblingCompositionByCoveringOverlayIsRestored() {
+    // Outside touch mode, the overlay's composition clearing its focus makes Android move it.
+    InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
     val isCovered = mutableStateOf(false)
     rule.setContent {
       Column {
@@ -650,7 +653,9 @@ class OverlayFocusLayerTest {
           factory = { context ->
             ComposeView(context).apply {
               setContent {
-                Box(Modifier.overlayFocusLayer { isCovered.value }) {
+                // The first focusable, which focus that Android moves into the layer reaches first.
+                Column(Modifier.overlayFocusLayer { isCovered.value }) {
+                  Box(Modifier.size(48.dp).testTag(firstFocusableTag).focusable())
                   Box(Modifier.size(48.dp).testTag(editorTag).focusable())
                 }
               }
@@ -665,11 +670,13 @@ class OverlayFocusLayerTest {
     rule.onNodeWithTag(editorTag).assertIsNotFocused()
     rule.runOnIdle { isCovered.value = false }
     rule.onNodeWithTag(editorTag).assertIsFocused()
+    rule.onNodeWithTag(firstFocusableTag).assertIsNotFocused()
   }
 
   private companion object {
     const val overlayTag = "overlay"
     const val editorTag = "editor"
+    const val firstFocusableTag = "firstFocusable"
     const val independentOverlayTag = "independentOverlay"
   }
 }
