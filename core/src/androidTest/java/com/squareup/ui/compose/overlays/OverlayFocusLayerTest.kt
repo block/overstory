@@ -626,6 +626,47 @@ class OverlayFocusLayerTest {
     rule.runOnIdle { assertThat(outsideInput.isFocused).isTrue() }
   }
 
+  @Test
+  fun focusLeftInSiblingCompositionByCoveringOverlayIsRestored() {
+    val isCovered = mutableStateOf(false)
+    rule.setContent {
+      Column {
+        AndroidView(
+          factory = { context ->
+            ComposeView(context).apply {
+              setContent {
+                if (isCovered.value) {
+                  Box(
+                    Modifier.size(48.dp)
+                      .testTag(overlayTag)
+                      .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+                  )
+                }
+              }
+            }
+          }
+        )
+        AndroidView(
+          factory = { context ->
+            ComposeView(context).apply {
+              setContent {
+                Box(Modifier.overlayFocusLayer { isCovered.value }) {
+                  Box(Modifier.size(48.dp).testTag(editorTag).focusable())
+                }
+              }
+            }
+          }
+        )
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { isCovered.value = true }
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+    rule.runOnIdle { isCovered.value = false }
+    rule.onNodeWithTag(editorTag).assertIsFocused()
+  }
+
   private companion object {
     const val overlayTag = "overlay"
     const val editorTag = "editor"

@@ -16,6 +16,7 @@
 package com.squareup.ui.compose.overlays
 
 import android.view.View
+import android.view.ViewTreeObserver
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusProperties
@@ -46,8 +47,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.focused
 import androidx.compose.ui.semantics.requestFocus
+import kotlin.coroutines.resume
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Makes this overlay a focus target when [enabled]. When [requestInitialFocus] becomes true, it
@@ -86,8 +89,9 @@ public fun Modifier.overlayFocusTarget(enabled: Boolean, requestInitialFocus: Bo
  * again. Each time the layer clears focus, [overlayFocusTarget]s outside covered layers that want
  * initial focus request it, if they are in the layer's composition or in a composition that
  * contains it. When it is uncovered, it restores the saved descendant once after the next frame
- * applies its changes, so a covering overlay removed in that frame has released focus first. It
- * does not restore if focus has entered the layer since, or if a view that neither contains nor is
+ * applies its changes and the window lays out any changes pending then, so a covering overlay
+ * removed in that frame has released focus first, including from a separate composition. It does
+ * not restore if focus has entered the layer since, or if a view that neither contains nor is
  * contained by the layer's composition has taken it. If there is nothing to restore,
  * [overlayFocusTarget] descendants that want initial focus request it.
  *
@@ -350,9 +354,11 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
     pendingClear = null
     // A layer still inside a covered layer is restored, if needed, once that layer is uncovered.
     if (isInCoveredLayer()) return
+    val view = requireView()
     pendingRestore =
       coroutineScope.launch {
         awaitFrameApplied()
+        awaitPendingLayout(view)
         restoreFocusAfterUncover()
       }
   }
@@ -402,6 +408,31 @@ private class OverlayFocusLayerNode(private var isCovered: () -> Boolean) :
  */
 private suspend fun awaitFrameApplied() {
   withFrameNanos {}
+}
+
+/**
+ * Suspends until the window of [view] has finished the layout pass it has pending, if any. When a
+ * view that has focus clears it, such as a composition whose focused overlay was removed, Android
+ * gives focus to the first focusable view in the window. If layout is pending then, the next layout
+ * pass checks that focus again and can clear it without moving it anywhere, which would otherwise
+ * drop focus that a layer had already seen enter it.
+ */
+private suspend fun awaitPendingLayout(view: View) {
+  val rootView = view.rootView
+  if (!rootView.isLayoutRequested) return
+  suspendCancellableCoroutine { continuation ->
+    val listener =
+      object : ViewTreeObserver.OnGlobalLayoutListener {
+        override fun onGlobalLayout() {
+          rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+          if (continuation.isActive) continuation.resume(Unit)
+        }
+      }
+    rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
+    continuation.invokeOnCancellation {
+      rootView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+    }
+  }
 }
 
 /**
