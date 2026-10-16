@@ -5,8 +5,8 @@
 ### Fixes
 
 - A covered `Modifier.overlayFocusLayer` no longer restores its saved focus over a view outside its
-  composition that took focus while it was covered, such as an `EditText` beside the
-  `ComposeView`.
+  composition that has focus once the covering overlay leaves, such as an `EditText` beside the
+  `ComposeView` that a dismiss callback focuses.
 
 ## 0.3.0 — 2026-10-14
 

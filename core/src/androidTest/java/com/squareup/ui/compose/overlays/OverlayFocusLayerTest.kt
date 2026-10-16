@@ -552,6 +552,53 @@ class OverlayFocusLayerTest {
   }
 
   @Test
+  fun focusThatLeavingOverlayGivesOutsideCompositionIsNotRestoredOver() {
+    val isCovered = mutableStateOf(false)
+    lateinit var outsideInput: EditText
+    rule.setContent {
+      Column {
+        AndroidView(
+          factory = { context ->
+            ComposeView(context).apply {
+              setContent {
+                if (isCovered.value) {
+                  // Like a dismissed popover handing focus to an input in the overlay it came from.
+                  DisposableEffect(Unit) { onDispose { check(outsideInput.requestFocus()) } }
+                  Box(
+                    Modifier.size(48.dp)
+                      .testTag(overlayTag)
+                      .overlayFocusTarget(enabled = true, requestInitialFocus = true)
+                  )
+                }
+              }
+            }
+          }
+        )
+        AndroidView(factory = { context -> EditText(context).also { outsideInput = it } })
+        AndroidView(
+          factory = { context ->
+            ComposeView(context).apply {
+              setContent {
+                Box(Modifier.overlayFocusLayer { isCovered.value }) {
+                  Box(Modifier.size(48.dp).testTag(editorTag).focusable())
+                }
+              }
+            }
+          }
+        )
+      }
+    }
+    rule.onNodeWithTag(editorTag).requestFocus().assertIsFocused()
+    rule.runOnIdle { isCovered.value = true }
+    rule.onNodeWithTag(overlayTag).assertIsFocused()
+
+    rule.runOnIdle { isCovered.value = false }
+
+    rule.onNodeWithTag(editorTag).assertIsNotFocused()
+    rule.runOnIdle { assertThat(outsideInput.isFocused).isTrue() }
+  }
+
+  @Test
   fun focusTakenOutsideCompositionWhileCoveredIsNotRestoredOver() {
     val isCovered = mutableStateOf(false)
     lateinit var outsideInput: EditText

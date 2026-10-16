@@ -435,8 +435,10 @@ private fun overlayFocusReleaseListeners(view: View): OverlayFocusReleaseListene
 
 /**
  * Whether a view that neither contains nor is contained by this node's composition has the window's
- * focus. Focus a covering overlay held falls back to the composition, or one containing it, once
- * the overlay leaves; a view elsewhere that has focus took it.
+ * focus. Such a view is treated as having taken focus on purpose, for example from a callback that
+ * runs as the covering overlay leaves. Outside touch mode, Android can also hand focus to such a
+ * view when a covering overlay in a separate composition leaves, if it comes first in the window's
+ * focus order; the layer does not restore over that focus either.
  */
 private fun DelegatableNode.isFocusHeldOutsideComposition(): Boolean {
   val host = requireView()
