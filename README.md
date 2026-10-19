@@ -1,3 +1,5 @@
+<img src="docs/brand/overstory-mark.png" alt="Overstory's green layered-canopy logo" width="160" height="160">
+
 # Overstory
 
 Overstory is a toolkit for building overlays in Jetpack Compose. Use it for anchored overlays,
