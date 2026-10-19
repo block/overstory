@@ -44,7 +44,7 @@ jobs:
         run: >-
           ./gradlew --no-daemon -p consumer-test -PoverstoryVersion="$OVERSTORY_VERSION"
           ktfmtCheck assembleDebug assembleDebugAndroidTest
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: build-reports
@@ -85,7 +85,7 @@ jobs:
           script: |
             ./gradlew --no-daemon -Pversion="$OVERSTORY_VERSION" :core:connectedDebugAndroidTest :view-compat:connectedDebugAndroidTest
             ./gradlew --no-daemon -p consumer-test -PoverstoryVersion="$OVERSTORY_VERSION" connectedDebugAndroidTest
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: device-test-reports
