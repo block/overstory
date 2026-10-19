@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 — 2026-10-16
+
+### Compatibility
+
+- Dependency, build, runtime, and API requirements are unchanged from 0.3.0.
 
 ### Fixes
 
