@@ -51,7 +51,7 @@ and `consumer-test/local.properties`; these files are untracked. The consumer is
 build and does not read the root build's `local.properties`.
 Install `platform-tools`, `platforms;android-37.0`, and `build-tools;37.0.0` with the Android SDK Manager.
 Minimum Android version is API 24; bytecode targets Java 11.
-The supported dependency baseline is Kotlin 2.3.21, Compose 1.12.1, lifecycle 2.9.4,
+The supported dependency baseline is Kotlin 2.4.10, Compose 1.12.1, lifecycle 2.9.4,
 savedstate 1.3.3, Android Gradle Plugin 9.4.1, and Gradle 9.8.0.
 Dependencies resolve from Google Maven and Maven Central; Gradle plugins also use the Gradle Plugin Portal.
 No publishing credentials are needed to build or test.

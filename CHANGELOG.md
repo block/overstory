@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Compatibility
+
+- The supported Kotlin baseline is now 2.4.10, matching the Kotlin Gradle plugin and Compose compiler
+  plugin used to build the artifacts. Compose, lifecycle, Android runtime, bytecode, and API
+  requirements are unchanged from 0.3.1.
+
 ## 0.3.1 — 2026-10-19
 
 ### Compatibility

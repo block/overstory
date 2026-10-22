@@ -1,7 +1,7 @@
 public final class com/squareup/ui/compose/overlays/viewcompat/ComposableSingletons$ViewCompatibleOverlayHostKt {
 	public static final field INSTANCE Lcom/squareup/ui/compose/overlays/viewcompat/ComposableSingletons$ViewCompatibleOverlayHostKt;
 	public fun <init> ()V
-	public final fun getLambda$-77949266$view_compat_release ()Lkotlin/jvm/functions/Function3;
+	public final fun getLambda$-77949266$xyz_block_overstory_view_compat_release ()Lkotlin/jvm/functions/Function3;
 }
 
 public final class com/squareup/ui/compose/overlays/viewcompat/ViewCompatibleOverlayHostKt {
