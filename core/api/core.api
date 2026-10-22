@@ -9,7 +9,7 @@ public final class com/squareup/ui/compose/overlays/CenterSeekingOverlayPlacemen
 public final class com/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt {
 	public static final field INSTANCE Lcom/squareup/ui/compose/overlays/ComposableSingletons$OverlayHostKt;
 	public fun <init> ()V
-	public final fun getLambda$-81405369$core_release ()Lkotlin/jvm/functions/Function3;
+	public final fun getLambda$-81405369$xyz_block_overstory_core_release ()Lkotlin/jvm/functions/Function3;
 }
 
 public final class com/squareup/ui/compose/overlays/DirectionalOverlayPlacement : com/squareup/ui/compose/overlays/OverlayPlacementStrategy {
