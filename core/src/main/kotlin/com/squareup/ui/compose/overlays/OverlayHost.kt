@@ -53,7 +53,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
  * @param coveredContent Content displayed behind the overlay stack, measured at the host's size.
  * @param modifier Modifier applied to the host.
  * @param maxLifecycleState Lifecycle cap for each entry, given whether it is topmost. Must return
- *   [State.CREATED], [State.STARTED], or [State.RESUMED].
+ *   [State.CREATED], [State.STARTED], or [State.RESUMED]. By default the topmost entry may resume
+ *   and covered entries are capped at [State.STARTED]: they are still visible, but not focused.
  * @param overlayContentWrapper Optional per-entry state integration. Runs inside the entry's
  *   saveable-state and lifecycle scopes, before the lifecycle is first activated, so an integration
  *   can attach its saved-state registry. It must invoke its content exactly once in the same
@@ -69,7 +70,7 @@ public fun <T> OverlayHost(
   coveredContent: @Composable () -> Unit,
   modifier: Modifier = Modifier,
   maxLifecycleState: (overlay: T, isTopmost: Boolean) -> State = { _, isTopmost ->
-    if (isTopmost) State.RESUMED else State.CREATED
+    if (isTopmost) State.RESUMED else State.STARTED
   },
   overlayContentWrapper: @Composable (content: @Composable () -> Unit) -> Unit = { content ->
     content()

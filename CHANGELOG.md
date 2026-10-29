@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Behavior changes
+
+- `OverlayHost` and `ViewCompatibleOverlayHost` now cap covered entries at `STARTED` by default,
+  instead of `CREATED`. The topmost entry is still the only one that can resume. A covered entry is
+  still visible, so it now pauses when another entry covers it, and no longer stops. Content that
+  treats `ON_STOP` as no longer being shown, such as embedded Views that release their state, keeps
+  working while it is covered. Work gated on `STARTED`, such as `collectAsStateWithLifecycle`,
+  keeps running in covered entries. To keep the previous behavior, pass
+  `maxLifecycleState = { _, isTopmost -> if (isTopmost) State.RESUMED else State.CREATED }`.
+
 ### Compatibility
 
 - The supported Kotlin baseline is now 2.4.10, matching the Kotlin Gradle plugin and Compose compiler
