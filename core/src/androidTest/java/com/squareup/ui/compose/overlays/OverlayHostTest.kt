@@ -65,7 +65,7 @@ class OverlayHostTest {
     rule.onNodeWithTag("covered").assertTextEquals("covered")
     val originalOwners = rule.runOnIdle { owners.toMap() }
     rule.runOnIdle {
-      assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(State.CREATED)
+      assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(State.STARTED)
       assertThat(owners.getValue("second").lifecycle.currentState).isEqualTo(State.RESUMED)
       incrementSecond()
       overlays.add(overlays.removeAt(0))
@@ -75,7 +75,34 @@ class OverlayHostTest {
     rule.runOnIdle {
       originalOwners.forEach { (key, owner) -> assertThat(owners[key]).isSameInstanceAs(owner) }
       assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(State.RESUMED)
-      assertThat(owners.getValue("second").lifecycle.currentState).isEqualTo(State.CREATED)
+      assertThat(owners.getValue("second").lifecycle.currentState).isEqualTo(State.STARTED)
+    }
+  }
+
+  @Test
+  fun coveringEntryPausesItWithoutStoppingIt() {
+    val overlays = mutableStateListOf("bottom")
+    val events = mutableListOf<Event>()
+    lateinit var bottomOwner: LifecycleOwner
+    rule.setContent {
+      OverlayHost(overlays, keyOf = { it }, coveredContent = {}) { entry, _ ->
+        if (entry == "bottom") bottomOwner = LocalLifecycleOwner.current
+      }
+    }
+    rule.runOnIdle {
+      assertThat(bottomOwner.lifecycle.currentState).isEqualTo(State.RESUMED)
+      bottomOwner.lifecycle.addObserver(LifecycleEventObserver { _, event -> events += event })
+      events.clear()
+      overlays.add("top")
+    }
+    rule.runOnIdle {
+      assertThat(bottomOwner.lifecycle.currentState).isEqualTo(State.STARTED)
+      assertThat(events).containsExactly(Event.ON_PAUSE)
+      overlays.remove("top")
+    }
+    rule.runOnIdle {
+      assertThat(bottomOwner.lifecycle.currentState).isEqualTo(State.RESUMED)
+      assertThat(events).containsExactly(Event.ON_PAUSE, Event.ON_RESUME).inOrder()
     }
   }
 
@@ -177,7 +204,7 @@ class OverlayHostTest {
     }
     rule.runOnIdle {
       assertThat(wrapperStates.values).containsExactly(State.INITIALIZED, State.INITIALIZED)
-      assertThat(renderedStates).containsExactly("covered", State.CREATED, "top", State.RESUMED)
+      assertThat(renderedStates).containsExactly("covered", State.STARTED, "top", State.RESUMED)
     }
   }
 

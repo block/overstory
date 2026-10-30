@@ -95,7 +95,7 @@ class ViewCompatibleOverlayHostTest {
     rule.onNodeWithTag("covered").assertTextEquals("covered")
     rule.onNodeWithTag("second").assertTextEquals("second:0:true")
     rule.runOnIdle {
-      assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(Lifecycle.State.CREATED)
+      assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(Lifecycle.State.STARTED)
       assertThat(owners.getValue("second").lifecycle.currentState)
         .isEqualTo(Lifecycle.State.RESUMED)
       incrementSecond()
@@ -109,7 +109,7 @@ class ViewCompatibleOverlayHostTest {
     rule.runOnIdle {
       assertThat(owners.getValue("first").lifecycle.currentState).isEqualTo(Lifecycle.State.RESUMED)
       assertThat(owners.getValue("second").lifecycle.currentState)
-        .isEqualTo(Lifecycle.State.CREATED)
+        .isEqualTo(Lifecycle.State.STARTED)
     }
   }
 
@@ -141,13 +141,13 @@ class ViewCompatibleOverlayHostTest {
     rule.runOnIdle {
       assertThat(restoredValues).containsExactly("covered", null, "top", null)
       assertThat(statesAtViewCreation)
-        .containsExactly("covered", Lifecycle.State.CREATED, "top", Lifecycle.State.RESUMED)
+        .containsExactly("covered", Lifecycle.State.STARTED, "top", Lifecycle.State.RESUMED)
     }
     restoration.emulateSavedInstanceStateRestore()
     rule.runOnIdle {
       assertThat(restoredValues).containsExactly("covered", 1, "top", 2)
       assertThat(statesAtViewCreation)
-        .containsExactly("covered", Lifecycle.State.CREATED, "top", Lifecycle.State.RESUMED)
+        .containsExactly("covered", Lifecycle.State.STARTED, "top", Lifecycle.State.RESUMED)
     }
   }
 

@@ -53,8 +53,9 @@ embedded in it took focus.
   same key starts fresh.
 - Host recreation restores state for keys supplied again by the caller. The host does not save
   or restore the caller's navigation models.
-- The default lifecycle cap is `CREATED` for covered entries and `RESUMED` for the top entry.
-  Custom policies may return `CREATED`, `STARTED`, or `RESUMED`. An entry also follows its parent's
+- The default lifecycle cap is `STARTED` for covered entries and `RESUMED` for the top entry. A
+  covered entry is still visible but not focused, so it pauses without stopping. Custom policies
+  may return `CREATED`, `STARTED`, or `RESUMED`. An entry also follows its parent's
   lifecycle and can never resume after destruction.
 - View registry restoration happens before the entry lifecycle activates. Embedded View content
   sees the requested cap immediately, without briefly resuming covered entries.

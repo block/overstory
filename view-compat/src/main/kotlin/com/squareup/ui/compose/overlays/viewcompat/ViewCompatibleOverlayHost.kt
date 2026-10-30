@@ -33,7 +33,8 @@ import com.squareup.ui.compose.overlays.OverlayHost
  * @param keyOf Stable identity for each entry. Duplicate or unsaveable keys are rejected.
  * @param modifier Modifier applied to the host.
  * @param maxLifecycleState Lifecycle cap for each entry, given whether it is topmost. Must return
- *   [State.CREATED], [State.STARTED], or [State.RESUMED].
+ *   [State.CREATED], [State.STARTED], or [State.RESUMED]. By default the topmost entry may resume
+ *   and covered entries are capped at [State.STARTED]: they are still visible, but not focused.
  * @param coveredContent Content displayed behind the overlay stack, measured at the host's size.
  * @param overlayContent Renderer for an entry, given whether it is topmost.
  */
@@ -45,7 +46,7 @@ public fun <T> ViewCompatibleOverlayHost(
   coveredContent: @Composable () -> Unit,
   modifier: Modifier = Modifier,
   maxLifecycleState: (overlay: T, isTopmost: Boolean) -> State = { _, isTopmost ->
-    if (isTopmost) State.RESUMED else State.CREATED
+    if (isTopmost) State.RESUMED else State.STARTED
   },
   overlayContent: @Composable (overlay: T, isTopmost: Boolean) -> Unit,
 ) {
