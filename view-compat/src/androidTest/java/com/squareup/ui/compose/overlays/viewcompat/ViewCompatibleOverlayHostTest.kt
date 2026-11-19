@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.SaveableStateRegistry
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
 import androidx.compose.ui.platform.testTag
@@ -299,4 +300,25 @@ class ViewCompatibleOverlayHostTest {
     rule.onNodeWithTag("covered").assertTextEquals("1")
     rule.onNodeWithTag("top").assertTextEquals("2")
   }
+
+  @Test
+  fun overlayContainerProvidesLocalsToOverlaysButNotCoveredContent() {
+    rule.setContent {
+      ViewCompatibleOverlayHost(
+        overlays = listOf("bottom", "top"),
+        keyOf = { it },
+        coveredContent = { BasicText(LocalContainerLabel.current, Modifier.testTag("covered")) },
+        overlayContainer = { content ->
+          CompositionLocalProvider(LocalContainerLabel provides "container") { content() }
+        },
+      ) { entry, _ ->
+        BasicText("$entry:${LocalContainerLabel.current}", Modifier.testTag(entry))
+      }
+    }
+    rule.onNodeWithTag("covered").assertTextEquals("none")
+    rule.onNodeWithTag("bottom").assertTextEquals("bottom:container")
+    rule.onNodeWithTag("top").assertTextEquals("top:container")
+  }
 }
+
+private val LocalContainerLabel = staticCompositionLocalOf { "none" }
